@@ -1,0 +1,136 @@
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+.env/
+
+# ===========================
+# Environment Variables
+# ===========================
+.env
+.env.local
+.env.*.local
+.env.production
+
+# ===========================
+# Logs and Data Files
+# ===========================
+*.log
+logs/
+backend.log
+server.log
+backend_startup.log
+*.log.*
+
+# Runtime data files
+data/detection_log.csv
+data/user_activity.json
+data/users.json
+data/frames/*.jpg
+data/frames/*.zip
+data/frames/all_snapshots.zip
+data/recordings/
+data/reports/
+data/*.db
+data/*.sqlite
+
+# ===========================
+# Testing & Development
+# ===========================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Test files (keep only main source)
+test_*.py
+test_bi_*.py
+test_email*.py
+test_plotly*.py
+fix_*.py
+replace_*.py
+explanation.py
+manual_email_test.py
+quick_email_test.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ===========================
+# Documentation (Internal)
+# ===========================
+TODO_*.md
+*_FIX.md
+*_SUMMARY.md
+*_Plan.md
+*_Progress.md
+IMPLEMENTATION_*.md
+DOCUMENTATION_INDEX.md
+CHART_FIX_SUMMARY.md
+DASHBOARD_FIX.md
+ARCHITECTURE_REFACTORING.md
+BUG_FIX_*.md
+ENHANCED_DESIGN_SYSTEM.md
+UI_UX_ENHANCEMENT_SUMMARY.md
+DEPLOYMENT_CHECKLIST.md
+ADVANCED_FEATURES_GUIDE.md
+QUICK_START_ADVANCED_FEATURES.md
+README_ADVANCED_FEATURES.md
+GOOGLE_OAUTH_SETUP.md
+Analytics_Enhanced_Plan.md
+PLOTLY_QUICK_REFERENCE.md
+PLOTLY_ENHANCEMENT_SUMMARY.md
+WEB_DASHBOARD.html
+
+# ===========================
+# Sensitive Files
+# ===========================
+.google_o
+google_o
+JWT_IMPLEMENTATION_G
+*.pem
+*.key
+*.crt
+
+# ===========================
+# Other
+# ===========================
+miniforge.sh
+alert.mp3
+*.zip
+*.tar.gz
+*.tar
+

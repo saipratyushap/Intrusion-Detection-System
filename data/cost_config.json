@@ -1,0 +1,10 @@
+{
+  "cost_per_camera_monthly": 50.0,
+  "cost_per_detection": 0.01,
+  "cost_per_hour_monitoring": 15.0,
+  "infrastructure_cost_monthly": 200.0,
+  "personnel_cost_per_incident": 25.0,
+  "false_alarm_cost": 10.0,
+  "prevented_incident_value": 1000.0,
+  "number_of_cameras": 1
+}
