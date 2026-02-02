@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Intrusion Detection System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/login_signup.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="/static/login_signup.js" defer></script>
+</head>
+<body>
+    <!-- Particle Background Canvas -->
+    <canvas id="particleCanvas" class="particle-canvas"></canvas>
+    
+    <!-- Animated Background Shapes -->
+    <div class="background-animation">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+    </div>
+
+    <!-- Gradient Overlay -->
+    <div class="gradient-overlay"></div>
+    
+    <!-- Noise Texture Overlay -->
+    <div class="noise-overlay"></div>
+
+    <div class="container">
+        <div class="form-container" id="formContainer">
+            <!-- Decorative Elements -->
+            <div class="decorative-corner corner-tl"></div>
+            <div class="decorative-corner corner-tr"></div>
+            <div class="decorative-corner corner-bl"></div>
+            <div class="decorative-corner corner-br"></div>
+            
+            <!-- Pulse Ring Effect -->
+            <div class="pulse-ring pulse-ring-1"></div>
+            <div class="pulse-ring pulse-ring-2"></div>
+            
+            <div class="form-header">
+                <div class="logo-wrapper">
+                    <div class="logo">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="logo-ring"></div>
+                        <div class="logo-ring-2"></div>
+                        <div class="logo-shine"></div>
+                    </div>
+                </div>
+                <h1 class="gradient-text">Intrusion Detection System</h1>
+                <p class="subtitle">
+                    <i class="fas fa-video"></i>
+                    Real-time detection and surveillance system
+                </p>
+            </div>
+
+            <!-- Toggle Buttons -->
+            <div class="toggle-container">
+                <div class="toggle-slider" id="toggleSlider"></div>
+                <button class="toggle-btn active" id="loginToggle" aria-label="Switch to Login">
+                    <i class="fas fa-sign-in-alt"></i> 
+                    <span>Login</span>
+                </button>
+                <button class="toggle-btn" id="signupToggle" aria-label="Switch to Sign Up">
+                    <i class="fas fa-user-plus"></i> 
+                    <span>Sign Up</span>
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="form active" aria-label="Login Form">
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="loginEmail" name="email" required autocomplete="email" placeholder=" ">
+                        <label for="loginEmail">Email Address</label>
+                        <span class="input-border"></span>
+                        <div class="input-bg"></div>
+                        <span class="validation-icon" id="loginEmailValidation"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="loginPassword" name="password" required autocomplete="current-password" placeholder=" ">
+                        <label for="loginPassword">Password</label>
+                        <span class="input-border"></span>
+                        <div class="input-bg"></div>
+                        <button type="button" class="toggle-password" id="toggleLoginPassword" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="rememberMe">
+                        <span class="checkmark">
+                            <i class="fas fa-check check-icon"></i>
+                        </span>
+                        <span class="checkbox-label">Remember me</span>
+                    </label>
+                    <a href="#" class="forgot-password">
+                        <i class="fas fa-question-circle"></i> Forgot Password?
+                    </a>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <span class="btn-bg"></span>
+                    <span class="btn-shine"></span>
+                    <span class="btn-content">
+                        <span class="btn-text">Login</span>
+                        <i class="fas fa-arrow-right btn-icon"></i>
+                    </span>
+                </button>
+
+                <div class="divider">
+                    <span>or continue with</span>
+                </div>
+
+                <div class="social-login">
+                    <button type="button" class="social-btn google" aria-label="Login with Google">
+                        <span class="social-btn-bg"></span>
+                        <i class="fab fa-google"></i>
+                    </button>
+                    <button type="button" class="social-btn github" aria-label="Login with GitHub">
+                        <span class="social-btn-bg"></span>
+                        <i class="fab fa-github"></i>
+                    </button>
+                    <button type="button" class="social-btn microsoft" aria-label="Login with Microsoft">
+                        <span class="social-btn-bg"></span>
+                        <i class="fab fa-microsoft"></i>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signupForm" class="form" aria-label="Sign Up Form">
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="signupName" name="name" required autocomplete="name" placeholder=" ">
+                        <label for="signupName">Full Name</label>
+                        <span class="input-border"></span>
+                        <div class="input-bg"></div>
+                        <span class="validation-icon" id="signupNameValidation"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" id="signupEmail" name="email" required autocomplete="email" placeholder=" ">
+                        <label for="signupEmail">Email Address</label>
+                        <span class="input-border"></span>
+                        <div class="input-bg"></div>
+                        <span class="validation-icon" id="signupEmailValidation"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="signupPassword" name="password" required autocomplete="new-password" placeholder=" ">
+                        <label for="signupPassword">Password</label>
+                        <span class="input-border"></span>
+                        <div class="input-bg"></div>
+                        <button type="button" class="toggle-password" id="toggleSignupPassword" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-strength">
+                        <div class="strength-bars">
+                            <div class="strength-bar" data-strength="1">
+                                <div class="strength-fill"></div>
+                            </div>
+                            <div class="strength-bar" data-strength="2">
+                                <div class="strength-fill"></div>
+                            </div>
+                            <div class="strength-bar" data-strength="3">
+                                <div class="strength-fill"></div>
+                            </div>
+                            <div class="strength-bar" data-strength="4">
+                                <div class="strength-fill"></div>
+                            </div>
+                        </div>
+                        <div class="strength-info">
+                            <span class="strength-text" id="strengthText">Password strength</span>
+                            <span class="strength-requirements" id="strengthRequirements"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="signupConfirmPassword" name="confirmPassword" required autocomplete="new-password" placeholder=" ">
+                        <label for="signupConfirmPassword">Confirm Password</label>
+                        <span class="input-border"></span>
+                        <div class="input-bg"></div>
+                        <span class="match-indicator" id="matchIndicator">
+                            <i class="fas fa-check"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="agreeTerms" required>
+                        <span class="checkmark">
+                            <i class="fas fa-check check-icon"></i>
+                        </span>
+                        <span class="checkbox-label">I agree to the <a href="#" class="link-accent">Terms & Conditions</a></span>
+                    </label>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <span class="btn-bg"></span>
+                    <span class="btn-shine"></span>
+                    <span class="btn-content">
+                        <span class="btn-text">Create Account</span>
+                        <i class="fas fa-arrow-right btn-icon"></i>
+                    </span>
+                </button>
+
+                <div class="divider">
+                    <span>or sign up with</span>
+                </div>
+
+                <div class="social-login">
+                    <button type="button" class="social-btn google" aria-label="Sign up with Google">
+                        <span class="social-btn-bg"></span>
+                        <i class="fab fa-google"></i>
+                    </button>
+                    <button type="button" class="social-btn github" aria-label="Sign up with GitHub">
+                        <span class="social-btn-bg"></span>
+                        <i class="fab fa-github"></i>
+                    </button>
+                    <button type="button" class="social-btn microsoft" aria-label="Sign up with Microsoft">
+                        <span class="social-btn-bg"></span>
+                        <i class="fab fa-microsoft"></i>
+                    </button>
+                </div>
+            </form>
+
+            <div class="form-footer">
+                <p id="switchText">
+                    Don't have an account? 
+                    <a href="#" id="switchToSignup" class="link-primary">Sign Up</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div class="success-message" id="successMessage">
+            <div class="success-content">
+                <div class="success-icon-wrapper">
+                    <div class="success-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="success-ring"></div>
+                    <div class="success-ring-2"></div>
+                    <div class="success-particles" id="successParticles"></div>
+                </div>
+                <h2 class="success-title">Welcome!</h2>
+                <p class="success-text">Redirecting to dashboard...</p>
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast" id="toast">
+        <div class="toast-icon-wrapper">
+            <i class="toast-icon"></i>
+        </div>
+        <span class="toast-message"></span>
+        <button class="toast-close" aria-label="Close notification">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="toast-progress"></div>
+    </div>
+
+    <!-- Confetti Container -->
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <span class="loading-text">Loading...</span>
+        </div>
+    </div>
+</body>
+</html>
+

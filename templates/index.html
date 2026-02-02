@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Intrusion Detection System - Live Monitoring Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/script.js" defer></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Enhanced Dashboard Header -->
+        <div class="dashboard-header">
+<div class="header-actions" style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; align-items: center;">
+                <!-- Start/Stop Monitoring Toggle Button -->
+                <button id="monitoringToggleBtn" class="btn btn-primary" onclick="toggleMonitoring()" title="Start/Stop Monitoring (Space)" style="padding: 10px 20px; border-radius: 10px; font-weight: 600;">
+                    <i class="fas fa-play"></i> <span id="monitoringToggleText">Stop</span>
+                </button>
+                
+                <!-- Monitoring Status Indicator -->
+                <div id="monitoringIndicator" class="monitoring-indicator active">
+                    <i class="fas fa-circle"></i> Live
+                </div>
+                
+                <!-- Mute Toggle Button -->
+                <button id="muteToggleBtn" class="mute-toggle-btn" onclick="toggleMute()" title="Toggle Mute (M)" style="padding: 10px 15px; border-radius: 10px;">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                
+                <!-- Camera Switcher -->
+                <div class="camera-switcher">
+                    <div id="cameraIndicator" class="camera-indicator">Camera 1</div>
+                    <button class="camera-btn active" onclick="switchCamera(1)">1</button>
+                    <button class="camera-btn" onclick="switchCamera(2)">2</button>
+                    <button class="camera-btn" onclick="switchCamera(3)">3</button>
+                    <button class="camera-btn" onclick="switchCamera(4)">4</button>
+                </div>
+                
+                <button id="themeToggle" class="btn btn-outline-light" title="Toggle Theme" style="padding: 10px 15px; border-radius: 10px;">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a href="/snapshots" class="btn btn-outline-light" title="Snapshot Gallery" style="padding: 10px 15px; border-radius: 10px;">
+                    <i class="fas fa-images"></i>
+                </a>
+            </div>
+            <div class="logo-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h1>Live Monitoring Dashboard</h1>
+            <p class="subtitle">Intrusion Detection System with AI-Powered Detection</p>
+            <div class="status-badge-container" style="margin-top: 20px;">
+                <span class="status-badge">
+                    <i class="fas fa-broadcast-tower"></i> Live Monitoring Active
+                </span>
+            </div>
+            <!-- Keyboard Shortcuts Hint -->
+            <div class="shortcuts-hint" style="margin-top: 15px; font-size: 0.85rem; color: #64748b;">
+                <kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; margin: 0 3px;">Space</kbd>
+                <span style="margin-left: 5px;">Start/Stop</span>
+                <kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; margin: 0 3px;">M</kbd>
+                <span style="margin-left: 5px;">Mute</span>
+                <kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; margin: 0 3px;">?</kbd>
+                <span style="margin-left: 5px;">Help</span>
+            </div>
+        </div>
+
+        <!-- Summary Cards - Enhanced Design -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <a href="/data" class="text-decoration-none">
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                                <i class="fas fa-search-location" style="font-size: 2.5rem; color: #00d4ff; opacity: 0.8;"></i>
+                            </div>
+                            <h5 class="card-title">Total Detections</h5>
+                            <h3 id="totalDetections" class="fw-bold">
+                                <span class="loading"></span>
+                            </h3>
+                            <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 10px; margin-bottom: 0;">
+                                <i class="fas fa-chart-line"></i> All-time detections
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="/data" class="text-decoration-none">
+                    <div class="card border-danger">
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: #ef4444; opacity: 0.8;"></i>
+                            </div>
+                            <h5 class="card-title">Total Violations 🚨</h5>
+                            <h3 id="totalViolations" class="fw-bold">
+                                <span class="loading"></span>
+                            </h3>
+                            <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 10px; margin-bottom: 0;">
+                                <i class="fas fa-ban"></i> Restricted area breaches
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="/data" class="text-decoration-none">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                                <i class="fas fa-trophy" style="font-size: 2.5rem; color: #22c55e; opacity: 0.8;"></i>
+                            </div>
+                            <h5 class="card-title">Most Frequent Class</h5>
+                            <h3 id="mostFrequentClass" class="fw-bold" style="font-size: 1.8rem;">
+                                <span class="loading"></span>
+                            </h3>
+                            <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 10px; margin-bottom: 0;">
+                                <i class="fas fa-layer-group"></i> Top detected object
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Actions Bar -->
+        <div class="row g-3 mb-5" style="display: none;">
+            <div class="col-md-3">
+                <a href="/data" class="btn btn-custom w-100" style="background: linear-gradient(135deg, #00d4ff, #7c3aed); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; transition: all 0.3s;">
+                    <i class="fas fa-table"></i> View All Data
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/api/docs" class="btn btn-custom w-100" style="background: linear-gradient(135deg, #7c3aed, #ec4899); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; transition: all 0.3s;">
+                    <i class="fas fa-code"></i> API Docs
+                </a>
+            </div>
+            <div class="col-md-3">
+                <button onclick="location.reload()" class="btn btn-custom w-100" style="background: linear-gradient(135deg, #ec4899, #f97316); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; transition: all 0.3s;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="col-md-3">
+                <a href="/" class="btn btn-custom w-100" style="background: linear-gradient(135deg, #22c55e, #06b6d4); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; transition: all 0.3s;">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Charts Section - Enhanced Layout -->
+        <div class="chart-container">
+            <div class="chart-box">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px;">
+                    <i class="fas fa-chart-bar" style="color: #00d4ff; font-size: 1.3rem;"></i>
+                    <h3 style="margin: 0;">Objects with Confidence Levels</h3>
+                </div>
+                <canvas id="barChart"></canvas>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-top: 15px; margin-bottom: 0;">
+                    <i class="fas fa-info-circle"></i> Detection confidence distribution across all object classes
+                </p>
+            </div>
+            <div class="chart-box">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px;">
+                    <i class="fas fa-clock" style="color: #ec4899; font-size: 1.3rem;"></i>
+                    <h3 style="margin: 0;">Violations by Time of Day</h3>
+                </div>
+                <canvas id="violationPieChart"></canvas>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-top: 15px; margin-bottom: 0;">
+                    <i class="fas fa-info-circle"></i> Temporal distribution of security violations
+                </p>
+            </div>
+        </div>
+
+        <!-- Violation Analysis Section -->
+        <div id="violationByTime" style="display: none;">
+            <h4><i class="fas fa-calendar-alt"></i> Violation Analysis by Time Period</h4>
+            <div class="violation-time">
+                <p><strong>Morning (6 AM - 12 PM):</strong> <span id="morningViolations">Loading...</span></p>
+                <p><strong>Afternoon (12 PM - 6 PM):</strong> <span id="afternoonViolations">Loading...</span></p>
+                <p><strong>Evening/Night (6 PM - 6 AM):</strong> <span id="eveningViolations">Loading...</span></p>
+            </div>
+        </div>
+
+        <!-- Data Table - Enhanced with Better Styling -->
+        <div style="margin-top: 50px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <h3 style="color: #f1f5f9; font-size: 1.8rem; font-weight: 700; display: flex; align-items: center; gap: 12px; margin: 0;">
+                    <i class="fas fa-list-alt" style="color: #00d4ff;"></i>
+                    Recent Detection Events
+                </h3>
+                <a href="/data" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #00d4ff, #7c3aed); color: white; border-radius: 12px; font-weight: 600; text-decoration: none; transition: all 0.3s;">
+                    <i class="fas fa-external-link-alt"></i> View Full Data
+                </a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th><i class="fas fa-clock"></i> Timestamp</th>
+                            <th><i class="fas fa-tag"></i> Class</th>
+                            <th><i class="fas fa-percentage"></i> Confidence (%)</th>
+                            <th><i class="fas fa-exclamation-triangle"></i> Violation Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTable">
+                        <tr>
+                            <td colspan="4" class="text-center" style="padding: 50px !important;">
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                                    <span class="loading" style="width: 40px; height: 40px; border-width: 4px;"></span>
+                                    <span style="color: #94a3b8; font-size: 1.1rem;">
+                                        <i class="fas fa-satellite-dish"></i> Connecting to live data stream...
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 60px; padding: 30px; background: rgba(255, 255, 255, 0.03); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);">
+            <p style="color: #94a3b8; font-size: 0.95rem; margin: 0;">
+                <i class="fas fa-shield-alt" style="color: #00d4ff;"></i> 
+                Intrusion Detection System
+            </p>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 8px; margin-bottom: 0;">
+                Powered by <strong style="color: #7c3aed;">YOLOv8</strong> & <strong style="color: #00d4ff;">FastAPI</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Custom Button Hover Effects -->
+    <style>
+        .btn-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4) !important;
+        }
+        
+        /* Enhanced table row animations */
+        .table tbody tr {
+            animation: fadeInRow 0.4s ease-out;
+        }
+        
+        @keyframes fadeInRow {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Status indicator for violations */
+        .violation-yes {
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #fca5a5 !important;
+            font-weight: 700 !important;
+            padding: 6px 12px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+        }
+        
+        .violation-no {
+            background: rgba(34, 197, 94, 0.15) !important;
+            color: #4ade80 !important;
+            font-weight: 600 !important;
+            padding: 6px 12px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(34, 197, 94, 0.3) !important;
+        }
+        
+        /* Card number animation */
+        @keyframes countUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card h3 {
+            animation: countUp 0.6s ease-out;
+        }
+    </style>
+</body>
+</html>

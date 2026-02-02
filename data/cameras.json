@@ -1,0 +1,19 @@
+{
+  "cameras": [
+    {
+      "id": "cam_1",
+      "name": "Main Entrance Camera",
+      "url": "0",
+      "enabled": true,
+      "resolution": "640x480",
+      "fps": 20,
+      "location": "Main Entrance",
+      "detection_classes": ["person", "vehicle"],
+      "alert_classes": ["person"],
+      "created_at": "2026-01-28T10:00:00",
+      "last_active": "2026-01-28T10:00:00",
+      "status": "online"
+    }
+  ]
+}
+

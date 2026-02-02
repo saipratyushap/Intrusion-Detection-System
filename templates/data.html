@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Live Monitoring Dashboard - Intrusion Detection System</title>
+    <link rel="stylesheet" href="/static/data.css?v=5.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/data.js?v=5.0" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="app-header">
+            <h1>📊 Live Monitoring Dashboard</h1>
+            <p>Real-Time Detection Analytics</p>
+        </div>
+
+        <!-- Connection Status -->
+        <div id="connection-status" class="connection-status">
+            <span class="status-dot"></span>
+            <span id="status-text">Connecting...</span>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="dashboard">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </button>
+            <button class="tab-button" data-tab="alerts">
+                <i class="fas fa-bell"></i> Alerts
+            </button>
+            <button class="tab-button" data-tab="analytics">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </button>
+            <button class="tab-button" data-tab="activity">
+                <i class="fas fa-stream"></i> Activity Feed
+            </button>
+            <button class="tab-button" data-tab="health">
+                <i class="fas fa-heartbeat"></i> System Health
+            </button>
+            <button class="tab-button" data-tab="cameras">
+                <i class="fas fa-video"></i> Cameras
+            </button>
+            <button class="tab-button" data-tab="users">
+                <i class="fas fa-users"></i> User Activity
+            </button>
+            <button class="tab-button" data-tab="filters">
+                <i class="fas fa-filter"></i> Filters & Search
+            </button>
+            <button class="tab-button" data-tab="export">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            
+            <!-- DASHBOARD TAB -->
+            <div class="tab-pane active" id="dashboard-tab" data-tab="dashboard">
+        <div class="stats-container">
+            <div class="glass-card stat-card">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-value" id="total-detections">0</div>
+                <div class="stat-label">Total Detections</div>
+                <div class="stat-bar"></div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-icon">🚨</div>
+                <div class="stat-value" id="total-violations">0</div>
+                <div class="stat-label">Violations</div>
+                <div class="stat-bar danger"></div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-icon">📸</div>
+                <div class="stat-value" id="total-snapshots">0</div>
+                <div class="stat-label">Snapshots</div>
+                <div class="stat-bar success"></div>
+            </div>
+            <div class="glass-card stat-card">
+                <div class="stat-icon">🔔</div>
+                <div class="stat-value" id="alert-classes">0</div>
+                <div class="stat-label">Alert Classes</div>
+                <div class="stat-bar warning"></div>
+            </div>
+        </div>
+
+                <!-- Dashboard Controls -->
+                <div class="dashboard-controls">
+                    <div class="control-buttons">
+                        <button id="refresh-btn" class="btn-control" title="Refresh data">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <label class="auto-refresh-toggle">
+                            <input type="checkbox" id="auto-refresh" checked>
+                            <span>Auto Refresh</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="summary-stats">
+                    <div class="summary-card">
+                        <span class="summary-label">Today</span>
+                        <span class="summary-value" id="today-count">0</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="summary-label">This Week</span>
+                        <span class="summary-value" id="week-count">0</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="summary-label">Violation Rate</span>
+                        <span class="summary-value" id="violation-rate">0%</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="summary-label">Avg Confidence</span>
+                        <span class="summary-value" id="avg-confidence">0%</span>
+                    </div>
+                </div>
+
+                <!-- Section Header -->
+                <div class="section-header">
+                    <span class="header-bar"></span>
+                    Detection Log
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-container">
+                    <table id="data-table" class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Class</th>
+                                <th>Confidence</th>
+                                <th>Violation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state glass-card">
+                    <div class="empty-icon">📋</div>
+                    <h3>No Data Yet</h3>
+                    <p>Detection data will appear here when monitoring starts</p>
+                </div>
+            </div>
+
+            <!-- ALERTS TAB -->
+            <div class="tab-pane" id="alerts-tab" data-tab="alerts">
+                <div class="alerts-panel glass-card">
+                    <div class="alerts-header-full">
+                        <h2><i class="fas fa-bell"></i> Real-Time Alerts</h2>
+                        <span class="alert-count-badge" id="alert-count">0</span>
+                    </div>
+                    <div class="alerts-list-full" id="alerts-list">
+                        <div class="no-alerts">
+                            <i class="fas fa-check-circle"></i>
+                            <p>No active alerts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANALYTICS TAB -->
+            <div class="tab-pane" id="analytics-tab" data-tab="analytics">
+                <div class="analytics-panel glass-card">
+                    <div class="analytics-panel-header">
+                        <h2><i class="fas fa-chart-bar"></i> Analytics Dashboard</h2>
+                    </div>
+                    
+                    <!-- Chart Type Selector -->
+                    <div class="chart-type-selector">
+                        <label>Select Chart Type:</label>
+                        <select id="chart-type" class="chart-select">
+                            <option value="classDistribution">Class Distribution (Pie)</option>
+                            <option value="violationTrend">Violation Trend (Line)</option>
+                            <option value="confidenceByClass">Confidence by Class (Bar)</option>
+                            <option value="hourlyActivity">Hourly Activity (Bar)</option>
+                            <option value="violationPie">Violation vs Safe (Doughnut)</option>
+                        </select>
+                        <button id="refresh-charts" class="btn-refresh-charts">
+                            <i class="fas fa-sync-alt"></i> Refresh Charts
+                        </button>
+                    </div>
+
+                    <!-- Main Chart Container -->
+                    <div class="chart-container-main">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+
+                    <!-- Secondary Charts Grid -->
+                    <div class="charts-grid">
+                        <div class="chart-box">
+                            <h4>Detection by Class</h4>
+                            <canvas id="classPieChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4>Violations Over Time</h4>
+                            <canvas id="violationLineChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4>Confidence Levels</h4>
+                            <canvas id="confidenceBarChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4>Violation Status</h4>
+                            <canvas id="statusDoughnutChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Summary -->
+                    <div class="stats-summary-grid">
+                        <div class="stat-box">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="stat-total">0</span>
+                                <span class="stat-desc">Total Detections</span>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon">🚨</div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="stat-violations">0</span>
+                                <span class="stat-desc">Violations</span>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="stat-safe">0</span>
+                                <span class="stat-desc">Safe</span>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="stat-rate">0%</span>
+                                <span class="stat-desc">Violation Rate</span>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="stat-confidence">0%</span>
+                                <span class="stat-desc">Avg Confidence</span>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon">🏆</div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="stat-top-class">-</span>
+                                <span class="stat-desc">Top Class</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTERS TAB -->
+            <div class="tab-pane" id="filters-tab" data-tab="filters">
+                <div class="filters-panel glass-card">
+                    <div class="filters-panel-header">
+                        <h2><i class="fas fa-filter"></i> Advanced Filters & Search</h2>
+                    </div>
+
+                    <!-- Quick Filters -->
+                    <div class="filters-section-group">
+                        <h3>Quick Filters</h3>
+                        <div class="filter-group">
+                            <button class="filter-btn active" data-filter="all">
+                                <i class="fas fa-list"></i> All
+                            </button>
+                            <button class="filter-btn" data-filter="violations">
+                                <i class="fas fa-exclamation-triangle"></i> Violations Only
+                            </button>
+                            <button class="filter-btn" data-filter="safe">
+                                <i class="fas fa-check-circle"></i> Safe Only
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search Box -->
+                    <div class="filters-section-group">
+                        <h3>Search</h3>
+                        <div class="search-box-large">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="search-input" placeholder="Search by class, timestamp, or confidence...">
+                        </div>
+                    </div>
+
+                    <!-- Class Filter -->
+                    <div class="filters-section-group">
+                        <h3>Detection Class</h3>
+                        <select id="class-filter" class="filter-select-large">
+                            <option value="">All Classes</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range Picker -->
+                    <div class="filters-section-group">
+                        <h3>Date Range</h3>
+                        <div class="date-range-picker-large">
+                            <div class="date-input-group">
+                                <label for="date-from"><i class="fas fa-calendar"></i> From Date</label>
+                                <input type="date" id="date-from" class="date-input">
+                            </div>
+                            <div class="date-input-group">
+                                <label for="date-to"><i class="fas fa-calendar"></i> To Date</label>
+                                <input type="date" id="date-to" class="date-input">
+                            </div>
+                            <button id="clear-dates-btn" class="btn-clear-dates" title="Clear date filters">
+                                <i class="fas fa-times"></i> Clear Dates
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Summary -->
+                    <div class="filter-summary">
+                        <p><strong>Active Filters:</strong> <span id="filter-summary-text">None</span></p>
+                    </div>
+                </div>
+
+                <!-- Filtered Results Table -->
+                <div class="filters-results">
+                    <h3 style="margin-bottom: 1rem; color: #64748b; font-size: 0.95rem;">📊 Filtered Results</h3>
+                    <div class="table-wrapper">
+                        <table id="filtered-data-table" class="detection-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Class</th>
+                                    <th>Confidence</th>
+                                    <th>Violation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                        <div id="filtered-empty-state" class="empty-state" style="display: none;">
+                            <i class="fas fa-inbox"></i>
+                            <p>No data to display</p>
+                            <small>Try adjusting your filters or check back later</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTIVITY FEED TAB -->
+            <div class="tab-pane" id="activity-tab" data-tab="activity">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <span class="header-bar"></span>
+                        <i class="fas fa-stream"></i> Real-Time Activity Feed
+                    </div>
+                    <div class="activity-feed-container" id="activity-feed">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading activity data...
+                        </div>
+                    </div>
+                    <div class="activity-controls" style="margin-top: 1rem;">
+                        <button id="refresh-activity" class="btn-control">
+                            <i class="fas fa-sync-alt"></i> Refresh Activity
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SYSTEM HEALTH TAB -->
+            <div class="tab-pane" id="health-tab" data-tab="health">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <span class="header-bar"></span>
+                        <i class="fas fa-heartbeat"></i> System Health Monitoring
+                    </div>
+                    <div id="system-health" class="health-grid">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading health data...
+                        </div>
+                    </div>
+                    <div class="health-refresh" style="margin-top: 1rem; text-align: center;">
+                        <button id="refresh-health" class="btn-control">
+                            <i class="fas fa-sync-alt"></i> Refresh Health Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CAMERAS TAB -->
+            <div class="tab-pane" id="cameras-tab" data-tab="cameras">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <span class="header-bar"></span>
+                        <i class="fas fa-video"></i> Camera Management
+                    </div>
+                    <div id="cameras-list" class="cameras-grid">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading cameras...
+                        </div>
+                    </div>
+                    <div class="cameras-refresh" style="margin-top: 1rem; text-align: center;">
+                        <button id="refresh-cameras" class="btn-control">
+                            <i class="fas fa-sync-alt"></i> Refresh Cameras
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USER ACTIVITY TAB -->
+            <div class="tab-pane" id="users-tab" data-tab="users">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <span class="header-bar"></span>
+                        <i class="fas fa-users"></i> User Activity Log
+                    </div>
+                    <div id="user-activity" class="user-activity-container">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Loading user activity...
+                        </div>
+                    </div>
+                    <div class="user-stats" id="user-stats" style="margin-top: 1rem;"></div>
+                    <div class="user-refresh" style="margin-top: 1rem; text-align: center;">
+                        <button id="refresh-users" class="btn-control">
+                            <i class="fas fa-sync-alt"></i> Refresh User Activity
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPORT & ANALYTICS TAB -->
+            <div class="tab-pane" id="export-tab" data-tab="export">
+                <div class="export-panel glass-card">
+                    <div class="export-panel-header">
+                        <h2><i class="fas fa-download"></i> Export & Analytics</h2>
+                    </div>
+
+                    <!-- Export Section -->
+                    <div class="export-section-group">
+                        <h3>Export Data</h3>
+                        <p class="section-description">Export filtered detection data to CSV format for further analysis and reporting</p>
+                        <button id="export-btn" class="btn-export">
+                            <i class="fas fa-download"></i> Export to CSV
+                        </button>
+                    </div>
+
+                    <!-- Quick Export Templates -->
+                    <div class="export-section-group">
+                        <h3>Quick Export</h3>
+                        <div class="quick-export-buttons">
+                            <button class="btn-quick-export" data-export="violations">
+                                <i class="fas fa-exclamation-circle"></i> Violations Only
+                            </button>
+                            <button class="btn-quick-export" data-export="today">
+                                <i class="fas fa-calendar-day"></i> Today's Data
+                            </button>
+                            <button class="btn-quick-export" data-export="week">
+                                <i class="fas fa-calendar-week"></i> This Week
+                            </button>
+                            <button class="btn-quick-export" data-export="all">
+                                <i class="fas fa-database"></i> All Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Summary -->
+                    <div class="export-section-group">
+                        <h3>Analytics Summary</h3>
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <div class="analytics-icon">📊</div>
+                                <div class="analytics-label">Total Records</div>
+                                <div class="analytics-value" id="analytics-total">0</div>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-icon">🚨</div>
+                                <div class="analytics-label">Violations</div>
+                                <div class="analytics-value" id="analytics-violations">0</div>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-icon">✓</div>
+                                <div class="analytics-label">Safe Records</div>
+                                <div class="analytics-value" id="analytics-safe">0</div>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-icon">📈</div>
+                                <div class="analytics-label">Violation %</div>
+                                <div class="analytics-value" id="analytics-percent">0%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Information -->
+                    <div class="export-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>CSV file includes: Timestamp, Class, Confidence Score, and Violation Status</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+</body>
+</html>
+
