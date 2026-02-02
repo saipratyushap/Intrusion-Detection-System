@@ -15,7 +15,6 @@ A comprehensive **Intrusion Detection System** built with **FastAPI** and **Stre
 
 ### 🔐 Authentication & Security
 - ✅ **User Login/Signup System** with secure password handling
-- ✅ **JWT Token-based Authentication**
 - ✅ **Session Management**
 - ✅ **Protected Routes**
 
@@ -99,11 +98,6 @@ EMAIL_SENDER=your_email@gmail.com
 EMAIL_PASSWORD=your_app_password
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
-
-# JWT Configuration
-JWT_SECRET_KEY=your_secret_key
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # Database
 DATA_DIR=data
@@ -191,7 +185,7 @@ streamlit run streamlit_run.py
 ### 🚀 FastAPI WebSocket Backend
 - **Data Handling**: Reads live data from `detection_log.csv`
 - **Real-Time Communication**: Uses WebSockets for instant updates
-- **Authentication**: JWT token-based security
+- **Authentication**: Token-based session security
 - **Email Service**: Automated report delivery
 
 #### API Endpoints
