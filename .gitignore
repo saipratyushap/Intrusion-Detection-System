@@ -1,0 +1,39 @@
+# Python Standard
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment Variables (Critical Security)
+.env
+.env.local
+.env.*
+
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+
+# IDE Settings
+.idea/
+.vscode/
+
+# Project Runtime Data (Sensitive & High Volume)
+data/users.json
+data/user_activity.json
+data/detection_log.csv
+data/token_blacklist.json
+data/cameras.json
+data/report_schedules.json
+data/cost_config.json
+
+# Media & Reports
+data/frames/
+data/recordings/
+data/reports/
+
+# Logs
+*.log
