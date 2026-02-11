@@ -31,9 +31,12 @@ data/report_schedules.json
 data/cost_config.json
 
 # Media & Reports
-data/frames/
-data/recordings/
-data/reports/
+data/frames/*
+!data/frames/.gitkeep
+data/recordings/*
+!data/recordings/.gitkeep
+data/reports/*
+!data/reports/.gitkeep
 
 # Logs
 *.log
