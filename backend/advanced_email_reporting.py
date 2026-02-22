@@ -92,7 +92,7 @@ class AdvancedEmailReporter:
     
     def load_email_config(self) -> Dict[str, Any]:
         """Load email configuration from .env file"""
-        env_file = Path(__file__).parent / ".env"
+        env_file = Path(__file__).parent.parent / ".env"
         self.config = {
             "enabled": False,
             "smtp_server": "smtp.gmail.com",

@@ -1416,15 +1416,7 @@ class ScheduleReportRequest(BaseModel):
     day_of_month: Optional[int] = None
     time: str = "09:00"
 
-class ViolationAlertRequest(BaseModel):
-    class_name: str
-    confidence: float
-    timestamp: Optional[str] = None
-    camera_id: Optional[str] = None
-    location: Optional[str] = None
-    recipient_email: Optional[str] = None
-    snapshot_path: Optional[str] = None
-    video_path: Optional[str] = None
+
 
 # ==================================================================================
 # CHART DATA API ENDPOINTS (for Analytics Dashboard)
@@ -1624,33 +1616,54 @@ async def send_report(request: SendReportRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/email/alert")
-async def send_violation_alert_endpoint(request: ViolationAlertRequest):
-    """Send immediate violation alert email"""
-    # Check if email is enabled
-    if not email_service.config['enabled']:
-        raise HTTPException(status_code=503, detail="Email service is disabled in .env")
+class AlertPayload(BaseModel):
+    class_name: str
+    confidence: float
+    timestamp: Optional[str] = None
+    camera_id: Optional[str] = "CAM-001"
+    location: Optional[str] = "Main Camera"
+    snapshot_path: Optional[str] = None
+    recipient_email: Optional[str] = None
 
+@app.post("/api/email/alert")
+async def send_email_alert(payload: AlertPayload):
+    """Send an immediate email alert for a violation."""
     try:
+        # Check if email service is initialized
+        global email_service
+        if not email_service:
+            email_service = EmailService()
+        
+        if not email_service.config.get('enabled'):
+            return JSONResponse(content={"status": "skipped", "message": "Email service disabled"}, status_code=200)
+
+        # Construct violation data
         violation_data = {
-            "class_name": request.class_name,
-            "confidence": request.confidence,
-            "timestamp": request.timestamp or datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            "camera_id": request.camera_id or "CAM-001",
-            "location": request.location or "Main Camera"
+            'class_name': payload.class_name,
+            'confidence': payload.confidence,
+            'timestamp': payload.timestamp or datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'camera_id': payload.camera_id,
+            'location': payload.location
         }
         
-        recipients = [request.recipient_email] if request.recipient_email else None
+        # Send alert using EmailService
+        # Note: recipient_email from payload takes precedence, otherwise uses config recipients
+        recipients = [payload.recipient_email] if payload.recipient_email else None
         
         result = email_service.send_violation_alert(
             violation_data=violation_data,
             recipients=recipients,
-            snapshot_path=request.snapshot_path,
-            video_path=request.video_path
+            snapshot_path=payload.snapshot_path
         )
-        return JSONResponse(content=result)
+        
+        if result.get('status') == 'success':
+            return JSONResponse(content=result, status_code=200)
+        else:
+            return JSONResponse(content=result, status_code=400)
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error processing alert: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/api/email/schedule-report")
 async def schedule_report(request: ScheduleReportRequest):
@@ -2598,58 +2611,7 @@ async def get_active_sessions():
         log_level="info"
     )
 
-# =============================================================================
-# EMAIL ALERT ENDPOINT
-# =============================================================================
 
-class AlertPayload(BaseModel):
-    class_name: str
-    confidence: float
-    timestamp: str
-    camera_id: Optional[str] = "CAM-001"
-    location: Optional[str] = "Main Camera"
-    snapshot_path: Optional[str] = None
-    recipient_email: Optional[str] = None
-
-@app.post("/api/email/alert")
-async def send_email_alert(payload: AlertPayload):
-    """Send an immediate email alert for a violation."""
-    try:
-        # Check if email service is initialized
-        global email_service
-        if not email_service:
-            email_service = EmailService()
-        
-        if not email_service.config.get('enabled'):
-            return JSONResponse(content={"status": "skipped", "message": "Email service disabled"}, status_code=200)
-
-        # Construct violation data
-        violation_data = {
-            'class_name': payload.class_name,
-            'confidence': payload.confidence,
-            'timestamp': payload.timestamp,
-            'camera_id': payload.camera_id,
-            'location': payload.location
-        }
-        
-        # Send alert using EmailService
-        # Note: recipient_email from payload takes precedence, otherwise uses config recipients
-        recipients = [payload.recipient_email] if payload.recipient_email else None
-        
-        result = email_service.send_violation_alert(
-            violation_data=violation_data,
-            recipients=recipients,
-            snapshot_path=payload.snapshot_path
-        )
-        
-        if result.get('status') == 'success':
-            return JSONResponse(content=result, status_code=200)
-        else:
-            return JSONResponse(content=result, status_code=400)
-
-    except Exception as e:
-        print(f"Error processing alert: {e}")
-        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
 
 
 if __name__ == "__main__":

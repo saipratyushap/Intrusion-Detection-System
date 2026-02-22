@@ -21,14 +21,11 @@ Intrusion-Detection-System-main 2/
 │   │   ├── script.js                     # Main JavaScript
 │   │   ├── data.js                      # Data page JS
 │   │   ├── snapshots.js                  # Snapshots page JS
-│   │   ├── login_signup.js              # Login page JS
 │   │   ├── logo.jpg                     # Logo image
 │   │   └── sounds/                      # Alert sounds
 │   └── templates/                       # HTML templates
-│       ├── index.html                    # Main dashboard
 │       ├── data.html                     # Data analytics page
-│       ├── snapshots.html                 # Snapshots gallery
-│       └── login_signup.html             # Login/Signup page
+│       └── snapshots.html                 # Snapshots gallery
 │
 ├── backend/               # FastAPI Backend Application
 │   ├── fastapi_run.py                   # Main FastAPI app
@@ -51,9 +48,7 @@ Intrusion-Detection-System-main 2/
 │   └── report_schedules.json          # Report schedules
 │
 ├── model/                 # ML Models
-│   ├── best.pt                         # Best detection model
-│   ├── yolov8n.pt                      # YOLOv8 nano model
-│   └── ppe8n.pt                        # PPE detection model
+│   └── best.pt                         # Best detection model
 │
 ├── .env                    # Environment configuration
 ├── .env.example           # Example environment file
@@ -153,6 +148,10 @@ Intrusion-Detection-System-main 2/
 ### Performance & Reliability
 - ✅ **Increased API Timeouts** - Extended from 30s to 60s for email reporting operations
 - ✅ **Better Error Handling** - Improved user activity logging timeout (2s → 10s)
+
+### Email Reporting & Backend Connectivity
+- ✅ **Fixed Environment Loading** - Corrected `.env` path resolution across all services
+- ✅ **Automated Email Diagnostics** - Configured a dedicated script for testing SMTP connections 
 
 ---
 

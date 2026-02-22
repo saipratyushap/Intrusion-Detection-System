@@ -33,7 +33,7 @@ from email.mime.image import MIMEImage
 import ssl
 
 # API Configuration
-API_URL = "http://127.0.0.1:8000"
+API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
 
 def log_user_action(user, action, details=""):
     """Log user action to the backend API"""
@@ -76,7 +76,7 @@ except ImportError:
     print("Warning: enhanced_plotly_analytics.py not found")
 
 # API Configuration for Email Reporting
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
 
 try:
     import requests
@@ -619,13 +619,17 @@ def send_email_notification(class_name, confidence, snapshot_path=None):
             print(f"⏰ Rate limited: skipping email for {class_name} (last sent < 1 min ago)")
             return  # Skip if less than 1 minute since last email
     
+    # CRITICAL FIX: Update time IMMEDIATELY to prevent thread spamming while waiting for backend
+    last_email_time[class_name] = current_time
+    
     def email_worker():
         print(f"🔧 email_worker starting for {class_name}")
         if send_violation_email_internal(class_name, confidence, snapshot_path):
             print(f"✅ Email sent successfully for {class_name} violation")
-            last_email_time[class_name] = current_time
         else:
             print(f"❌ Email sending failed for {class_name}")
+            # Optional: If you want to retry faster on failure, you could clear the time here
+            # del last_email_time[class_name]
     
     # Start email thread
     print(f"🚀 Starting email thread for {class_name}")
@@ -644,9 +648,13 @@ def init_pygame_mixer():
             print(f"Warning: Could not initialize PyGame mixer: {e}")
             _pygame_initialized = True  # Mark as attempted to avoid repeated failures
 
+# CRITICAL MACOS FIX: Initialize Pygame Audio in the main thread ONLY. 
+# Initializing it in a background thread causes a segmentation fault on Mac.
+init_pygame_mixer()
+
 def play_alert_sound(sound_path):
     try:
-        init_pygame_mixer()
+        # Mixer is already initialized on the main thread
         pygame.mixer.music.load(sound_path)
         pygame.mixer.music.play(-1)
         while alert_active:
@@ -660,6 +668,7 @@ def start_alert(sound_path):
     global alert_active, alert_thread
     if not alert_active:
         alert_active = True
+        # The thread will only play/load audio, not initialize the mixer
         alert_thread = threading.Thread(target=play_alert_sound, args=(sound_path,), daemon=True)
         alert_thread.start()
 
@@ -965,7 +974,7 @@ def login_page():
             
             st.markdown('<div style="margin-top: 2.5rem;"></div>', unsafe_allow_html=True)
             
-            submit = st.form_submit_button("Sign In Securely", use_container_width=True)
+            submit = st.form_submit_button("Sign In Securely", width="stretch")
             
             if submit:
                 if username and password:
@@ -988,7 +997,7 @@ def login_page():
             </div>
         """, unsafe_allow_html=True)
         
-        if st.button("Create Management Account", key="goto_signup", use_container_width=True):
+        if st.button("Create Management Account", key="goto_signup", width="stretch"):
             st.session_state.show_signup = True
             st.rerun()
         
@@ -1037,7 +1046,7 @@ def signup_page():
             with st.form("signup_email_form"):
                 st.markdown("<h3>📧 Verify Email</h3>", unsafe_allow_html=True)
                 email = st.text_input("Email Address", placeholder="your.name@example.com")
-                submit = st.form_submit_button("Send Verification Code", use_container_width=True)
+                submit = st.form_submit_button("Send Verification Code", width="stretch")
                 
                 if submit:
                     if email and "@" in email and "." in email:
@@ -1069,9 +1078,9 @@ def signup_page():
                 
                 col_s1, col_s2 = st.columns(2)
                 with col_s1:
-                    verify_submit = st.form_submit_button("Verify Email", use_container_width=True)
+                    verify_submit = st.form_submit_button("Verify Email", width="stretch")
                 with col_s2:
-                    change_email = st.form_submit_button("Change Email", use_container_width=True)
+                    change_email = st.form_submit_button("Change Email", width="stretch")
                 
                 if verify_submit:
                     # Check expiry
@@ -1102,7 +1111,7 @@ def signup_page():
                 confirm_password = st.text_input("Confirm Password", type="password", placeholder="Repeat password")
                 
                 st.markdown('<div style="margin-top: 1rem;"></div>', unsafe_allow_html=True)
-                submit = st.form_submit_button("Complete Registration", use_container_width=True)
+                submit = st.form_submit_button("Complete Registration", width="stretch")
                 
                 if submit:
                     if new_username and new_password and confirm_password:
@@ -1129,7 +1138,7 @@ def signup_page():
 
         # Bottom Actions centered
         st.markdown('<div style="margin-top: 2rem; text-align: center; color: #64748B; font-weight: 500;">Already registered?</div>', unsafe_allow_html=True)
-        if st.button("Return to Secure Login", key="back_to_login_btn", use_container_width=True):
+        if st.button("Return to Secure Login", key="back_to_login_btn", width="stretch"):
             st.session_state.show_signup = False
             # Clean up signup state
             if 'signup_step' in st.session_state: del st.session_state.signup_step
@@ -1206,11 +1215,11 @@ def main_app():
 
     col_detect_all, col_detect_none = st.sidebar.columns([1, 1])
     with col_detect_all:
-        if st.button("All", key="detect_all_btn", use_container_width=True):
+        if st.button("All", key="detect_all_btn", width="stretch"):
             st.session_state.detect_all = True
             st.rerun()
     with col_detect_none:
-        if st.button("None", key="detect_none_btn", use_container_width=True):
+        if st.button("None", key="detect_none_btn", width="stretch"):
             st.session_state.detect_all = False
             st.rerun()
 
@@ -1219,11 +1228,11 @@ def main_app():
 
     col_alert_all, col_alert_none = st.sidebar.columns([1, 1])
     with col_alert_all:
-        if st.button("All", key="alert_all_btn", use_container_width=True):
+        if st.button("All", key="alert_all_btn", width="stretch"):
             st.session_state.alert_all = True
             st.rerun()
     with col_alert_none:
-        if st.button("None", key="alert_none_btn", use_container_width=True):
+        if st.button("None", key="alert_none_btn", width="stretch"):
             st.session_state.alert_all = False
             st.rerun()
 
@@ -1238,7 +1247,7 @@ def main_app():
 
     col_cam_start, col_cam_stop = st.sidebar.columns(2)
     with col_cam_start:
-        if st.button("Start", key="camera_start_btn", use_container_width=True):
+        if st.button("Start", key="camera_start_btn", width="stretch"):
             if not st.session_state.camera_active:
                 cap = start_camera()
                 if cap:
@@ -1250,7 +1259,7 @@ def main_app():
                     st.sidebar.error("Cannot access camera")
     
     with col_cam_stop:
-        if st.button("Stop", key="camera_stop_btn", use_container_width=True):
+        if st.button("Stop", key="camera_stop_btn", width="stretch"):
             if st.session_state.camera_active:
                 # Stop video recording if active
                 if st.session_state.video_recording and st.session_state.video_writer:
@@ -1307,7 +1316,7 @@ def main_app():
         # Recording buttons
         col_rec_start, col_rec_stop = st.sidebar.columns(2)
         with col_rec_start:
-            if st.button("⏺ Start", key="recording_start_btn", use_container_width=True, disabled=st.session_state.video_recording):
+            if st.button("⏺ Start", key="recording_start_btn", width="stretch", disabled=st.session_state.video_recording):
                 # Initialize video writer
                 video_writer = init_video_writer(
                     st.session_state.recording_quality,
@@ -1323,7 +1332,7 @@ def main_app():
                     st.sidebar.error("Failed to start recording")
         
         with col_rec_stop:
-            if st.button("⏹ Stop", key="recording_stop_btn", use_container_width=True, disabled=not st.session_state.video_recording):
+            if st.button("⏹ Stop", key="recording_stop_btn", width="stretch", disabled=not st.session_state.video_recording):
                 if st.session_state.video_recording and st.session_state.video_writer:
                     st.session_state.video_writer.release()
                     st.session_state.video_writer = None
@@ -1602,7 +1611,7 @@ def main_app():
         # Fetch alerts from API
         try:
             import requests
-            response = requests.get("http://localhost:8000/api/alerts/stats", timeout=5)
+            response = requests.get(f"{API_BASE_URL}/api/alerts/stats", timeout=5)
             if response.status_code == 200:
                 alerts_data = response.json()
                 alert_count = alerts_data.get('total_alerts', 0)
@@ -1790,7 +1799,7 @@ def main_app():
                                 </div>
                                 ''', unsafe_allow_html=True)
                             
-                            frame_placeholder.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB", use_container_width=True)
+                            frame_placeholder.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB", width="stretch")
                     time.sleep(0.03)
             except Exception as e:
                 st.error(f"Error: {e}")
@@ -1895,7 +1904,7 @@ def main_app():
             with st.expander("📈 Detection Trends Over Time", expanded=True):
                 if HAS_PLOTLY_ANALYTICS and len(filtered_df) > 1:
                     fig_trends = epa.create_detection_timeline(filtered_df)
-                    st.plotly_chart(fig_trends, use_container_width=True, theme=None)
+                    st.plotly_chart(fig_trends, width="stretch", theme=None)
                 elif len(filtered_df) > 1:
                     # Group by date for line chart
                     daily_counts = filtered_df.groupby('Date').size().reset_index(name='Detections')
@@ -1911,7 +1920,7 @@ def main_app():
                 if HAS_PLOTLY_ANALYTICS and len(violation_filtered) > 1:
                     fig_violations = epa.create_detection_timeline(violation_filtered)
                     fig_violations.update_layout(title="Violation Timeline")
-                    st.plotly_chart(fig_violations, use_container_width=True, theme=None)
+                    st.plotly_chart(fig_violations, width="stretch", theme=None)
                 elif len(violation_filtered) > 1:
                     # Group violations by date
                     daily_violations = violation_filtered.groupby('Date').size().reset_index(name='Violations')
@@ -1929,14 +1938,14 @@ def main_app():
             with st.expander("🎯 Class Distribution", expanded=False):
                 if HAS_PLOTLY_ANALYTICS and len(filtered_df) > 0:
                     fig_pie = epa.create_detection_pie_chart(filtered_df)
-                    st.plotly_chart(fig_pie, use_container_width=True, theme=None)
+                    st.plotly_chart(fig_pie, width="stretch", theme=None)
                 else:
                     st.info("No class data available for analysis")
 
             with st.expander("📊 Confidence Distribution", expanded=False):
                 if HAS_PLOTLY_ANALYTICS and len(filtered_df) > 0:
                     fig_conf = epa.create_confidence_distribution(filtered_df)
-                    st.plotly_chart(fig_conf, use_container_width=True, theme=None)
+                    st.plotly_chart(fig_conf, width="stretch", theme=None)
                 else:
                     st.info("No confidence data available for analysis")
             
@@ -1947,7 +1956,7 @@ def main_app():
                 if len(filtered_df) > 0:
                     if HAS_PLOTLY_ANALYTICS:
                         fig_heatmap = epa.create_detection_heatmap(filtered_df)
-                        st.plotly_chart(fig_heatmap, use_container_width=True, theme=None)
+                        st.plotly_chart(fig_heatmap, width="stretch", theme=None)
                     else:
                         st.info("Chart module not available")
                 else:
@@ -1983,7 +1992,7 @@ def main_app():
             
             # ============ Data Table ============
             with st.expander("📋 Raw Data", expanded=False):
-                st.dataframe(filtered_df, use_container_width=True)
+                st.dataframe(filtered_df, width="stretch")
             
             # ============ Export Functionality ============
             with st.expander("📥 Export Data", expanded=False):
@@ -2008,7 +2017,7 @@ def main_app():
                     summary_stats.columns = ['Avg Confidence', 'Max Confidence', 'Min Confidence', 'Count', 'Violations']
                     
                     st.markdown("#### Class-wise Summary")
-                    st.dataframe(summary_stats, use_container_width=True)
+                    st.dataframe(summary_stats, width="stretch")
         
         else:
             st.info("No data yet. Start monitoring to see analytics.")
@@ -2073,7 +2082,7 @@ def main_app():
                         with cols[j]:
                             # Show image
                             try:
-                                st.image(fr['path'], caption=fr['name'][:25], use_container_width=True)
+                                st.image(fr['path'], caption=fr['name'][:25], width="stretch")
                             except Exception as img_error:
                                 st.error("Cannot load image")
                             
@@ -2285,7 +2294,7 @@ def main_app():
                 
                 recipients_input = st.text_area("Recipients (comma-separated)", height=80, help="Enter email addresses separated by commas")
                 
-                if st.button("📨 Send Report Now", use_container_width=True):
+                if st.button("📨 Send Report Now", width="stretch"):
                     if not recipients_input.strip():
                         st.error("Please enter at least one recipient email")
                     else:
