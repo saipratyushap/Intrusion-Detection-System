@@ -142,7 +142,8 @@ def diagnose_email():
             'recommendations': ['If you received this, email is working!']
         }
     }
-    
+
+
     result = s.send_report_email(test_report)
     print(f"Status: {result['status']}")
     print(f"Message: {result['message']}")
@@ -164,6 +165,10 @@ def diagnose_email():
         print(f"❌ EMAIL SENDING FAILED: {result['message']}")
         print("=" * 60)
 
+
+
 if __name__ == "__main__":
     diagnose_email()
+
+
 

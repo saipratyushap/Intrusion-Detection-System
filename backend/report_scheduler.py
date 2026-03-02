@@ -14,8 +14,8 @@ import json
 import os
 from pathlib import Path
 
-from .business_intelligence import ReportGenerator
-from .email_service import EmailService
+from business_intelligence import ReportGenerator
+from email_service import EmailService
 
 
 class ReportScheduler:
