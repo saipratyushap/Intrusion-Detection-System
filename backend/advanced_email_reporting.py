@@ -34,7 +34,7 @@ except ImportError:
     HAS_REPORTLAB = False
 
 import pandas as pd
-from .business_intelligence import AnalyticsDashboard, ReportGenerator
+from business_intelligence import AnalyticsDashboard, ReportGenerator
 
 
 class EmailReportTemplate:

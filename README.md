@@ -1,6 +1,6 @@
 # 🚀 Intrusion Detection System
 
-A comprehensive **Intrusion Detection System** built with **FastAPI** and **Streamlit**. This project integrates YOLO object detection with advanced analytics, business intelligence dashboards, and automated reporting capabilities.
+A comprehensive **Intrusion Detection System** built with **Flask** and **Streamlit**. This project integrates YOLO object detection with advanced analytics, business intelligence dashboards, and automated reporting capabilities.
 
 ---
 
@@ -27,8 +27,8 @@ Intrusion-Detection-System-main 2/
 │       ├── data.html                     # Data analytics page
 │       └── snapshots.html                 # Snapshots gallery
 │
-├── backend/               # FastAPI Backend Application
-│   ├── fastapi_run.py                   # Main FastAPI app
+├── backend/               # Flask Backend Application
+│   ├── flask_run.py                     # Main Flask app (port 8000)
 │   ├── advanced_analytics.py            # Predictive analytics
 │   ├── advanced_email_reporting.py       # Email reporting system
 │   ├── business_intelligence.py           # BI dashboards
@@ -127,7 +127,14 @@ Intrusion-Detection-System-main 2/
 
 ---
 
-## 🆕 Recent Updates (February 2026)
+## 🆕 Recent Updates (March 2026)
+
+### 🔄 Backend Migration: FastAPI → Flask
+- ✅ **Full Flask Conversion** - Entire backend migrated from FastAPI to Flask + Flask-SocketIO
+- ✅ **Zero Logic Changes** - All business logic, analytics, reporting, and email services preserved
+- ✅ **WebSocket → SocketIO** - Real-time detection stream now uses Flask-SocketIO with background threads
+- ✅ **Updated Dependencies** - `requirements.txt` updated with Flask ecosystem packages
+- ✅ **Removed FastAPI Code** - `fastapi_run.py` removed; replaced with `flask_run.py` (1,445 lines)
 
 ### UI/UX Improvements
 - ✅ **Fixed Sidebar Logo Display** - Implemented Base64 encoding for reliable logo rendering
@@ -157,15 +164,13 @@ Intrusion-Detection-System-main 2/
 
 ## 🚀 Running the Application
 
-### Terminal 1 - Backend (FastAPI):
+### Terminal 1 - Backend (Flask):
 ```bash
-cd "/Users/psaipratyusha/Downloads/Intrusion-Detection-System-main 2"
-uvicorn backend.fastapi_run:app --host 127.0.0.1 --port 8000 --reload
+python backend/flask_run.py
 ```
 
 ### Terminal 2 - Frontend (Streamlit):
 ```bash
-cd "/Users/psaipratyusha/Downloads/Intrusion-Detection-System-main 2"
 streamlit run frontend/streamlit_run.py --server.port 8501
 ```
 
@@ -173,8 +178,8 @@ streamlit run frontend/streamlit_run.py --server.port 8501
 | Component | URL |
 |----------|-----|
 | **Frontend (Streamlit)** | http://localhost:8501 |
-| **Backend API (FastAPI)** | http://127.0.0.1:8000 |
-| **API Documentation** | http://127.0.0.1:8000/docs |
+| **Backend API (Flask)** | http://127.0.0.1:8000 |
+| **API Info** | http://127.0.0.1:8000/api/info |
 | **Web Dashboard** | http://127.0.0.1:8000/data |
 
 ---
@@ -212,13 +217,11 @@ EMAIL_RECIPIENT_EMAIL=recipient@example.com
 
 ### 3️⃣ Start Backend
 ```bash
-cd "/Users/psaipratyusha/Downloads/Intrusion-Detection-System-main 2"
-uvicorn backend.fastapi_run:app --host 127.0.0.1 --port 8000 --reload
+python backend/flask_run.py
 ```
 
 ### 4️⃣ Start Frontend
 ```bash
-cd "/Users/psaipratyusha/Downloads/Intrusion-Detection-System-main 2"
 streamlit run frontend/streamlit_run.py --server.port 8501
 ```
 
@@ -308,15 +311,18 @@ All detected data is stored in `data/detection_log.csv`:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/auth/login` | POST | User login |
-| `/api/auth/signup` | POST | User registration |
-| `/api/auth/logout` | POST | User logout |
-| `/ws/data` | WebSocket | Real-time data stream |
-| `/api/analytics/*` | GET | Analytics endpoints |
-| `/api/reports/*` | GET/POST | Report endpoints |
-| `/api/alerts/*` | GET | Alert endpoints |
+| `/api/info` | GET | API overview & endpoints list |
+| `ws://` (SocketIO) | WS | Real-time detection stream |
+| `/api/analytics/*` | GET | Analytics & BI endpoints |
+| `/api/reports/*` | GET/POST | Report generation |
+| `/api/alerts` | GET | Violation alerts |
 | `/api/snapshots` | GET | List snapshots |
-| `/api/health/*` | GET | System health |
+| `/api/health/*` | GET | System health & uptime |
+| `/api/cameras/*` | GET/POST/PUT/DELETE | Camera management |
+| `/api/cost/*` | GET/PUT | Cost analysis |
+| `/api/email/*` | GET/POST | Email service |
+| `/api/schedules/*` | GET/POST/PATCH/DELETE | Report scheduling |
+| `/api/users/activity` | GET/POST | User activity logs |
 
 ---
 
@@ -359,7 +365,7 @@ All detected data is stored in `data/detection_log.csv`:
 
 ## 💻 Technologies Used
 
-- **Backend:** FastAPI, Uvicorn, WebSockets
+- **Backend:** Flask, Flask-SocketIO, Flask-CORS, Eventlet, Werkzeug
 - **Frontend:** Streamlit, HTML/CSS/JavaScript, Chart.js
 - **ML Models:** YOLOv8 (Ultralytics)
 - **Data:** CSV, JSON

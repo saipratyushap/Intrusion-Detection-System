@@ -1,4 +1,9 @@
 import os
+
+# Absolute paths — must come before everything else so all file references are correct
+# regardless of the working directory when Streamlit is launched
+_HERE = os.path.dirname(os.path.abspath(__file__))   # .../frontend
+_ROOT = os.path.dirname(_HERE)                        # .../Intrusion-Detection-System
 import requests
 
 # Set environment variables for stability on macOS
@@ -55,7 +60,7 @@ import plotly.express as px
 # Set page config as the first Streamlit command
 st.set_page_config(
     page_title="Real-Time Intrusion Detection - ThirdEye", 
-    page_icon=str(Path(__file__).parent / "static" / "favicon.png"),
+    page_icon=os.path.join(_HERE, "static", "favicon.png"),
     layout="wide", 
     initial_sidebar_state="expanded"
 )
@@ -87,7 +92,8 @@ except ImportError:
 
 try:
     import sys
-    sys.path.append(str(Path(__file__).parent.parent))
+    sys.path.append(_ROOT)
+    sys.path.append(os.path.join(_ROOT, "backend"))
     from backend.advanced_email_reporting import EmailReportTemplate, ReportScheduleManager
     HAS_EMAIL_REPORTING = True
     # Initialize schedule manager globally for use in UI
@@ -98,18 +104,20 @@ except ImportError:
     schedule_manager = None
 
 # Load environment variables
-ENV_FILE = Path(__file__).parent.parent / ".env"
+ENV_FILE = os.path.join(_ROOT, ".env")
 
 def load_env():
     """Load environment variables from .env file"""
     env_config = {}
-    if ENV_FILE.exists():
-        with open(ENV_FILE, 'r') as f:
+    try:
+        with open(str(ENV_FILE), 'r') as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith('#') and '=' in line:
                     key, value = line.split('=', 1)
                     env_config[key.strip()] = value.strip()
+    except (FileNotFoundError, OSError):
+        pass  # .env doesn't exist, use defaults
     return env_config
 
 # Load env config
@@ -213,7 +221,7 @@ def get_detection_activity_from_api(limit: int = 20) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-USERS_FILE = str(Path(__file__).parent.parent / "data" / "users.json")
+USERS_FILE = os.path.join(_ROOT, "data", "users.json")
 
 # Load users from file
 def load_users():
@@ -531,9 +539,9 @@ def inject_custom_css(authenticated=True):
 
 inject_custom_css(st.session_state.authenticated)
 
-csv_file = str(Path(__file__).parent.parent / "data" / "detection_log.csv")
-frames_dir = str(Path(__file__).parent.parent / "data" / "frames")
-recordings_dir = str(Path(__file__).parent.parent / "data" / "recordings")
+csv_file = os.path.join(_ROOT, "data", "detection_log.csv")
+frames_dir = os.path.join(_ROOT, "data", "frames")
+recordings_dir = os.path.join(_ROOT, "data", "recordings")
 os.makedirs(frames_dir, exist_ok=True)
 os.makedirs(recordings_dir, exist_ok=True)
 if not os.path.exists(csv_file):
@@ -541,7 +549,8 @@ if not os.path.exists(csv_file):
 
 @st.cache_resource
 def load_model():
-    return YOLO(str(Path(__file__).parent.parent / "model" / "best.pt"))
+    _model_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'model', 'best.pt'))
+    return YOLO(_model_path)
 
 model = load_model()
 available_classes = list(model.names.values())
@@ -560,50 +569,39 @@ alert_active = False
 alert_thread = None
 
 def send_violation_email_internal(class_name, confidence, snapshot_path=None):
-    """Send email notification via backend API"""
-    global EMAIL_ENABLED, EMAIL_RECIPIENT_EMAIL, API_BASE_URL
-    
-    print(f"🔍 send_violation_email_internal started for {class_name}")
-    
-    if not EMAIL_ENABLED:
-        print(f"❌ Email is not enabled in .env")
-        return False
-        
-    try:
-        if not 'requests' in sys.modules and not HAS_REQUESTS:
-             print("❌ requests library not found")
-             return False
+    """Send email notification directly for violation alerts"""
+    ALERT_RECIPIENT = "gopalmuri1919@gmail.com"
+    ALERT_SENDER = os.environ.get('EMAIL_SENDER_EMAIL', 'p.saipratyusha732@gmail.com')
+    ALERT_PASSWORD = os.environ.get('EMAIL_SENDER_PASSWORD', 'miduuotoblozqzqj')
 
-        # Prepare payload
-        payload = {
-            "class_name": class_name,
-            "confidence": float(confidence),
-            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            "camera_id": "CAM-001",
-            "location": "Main Camera",
-            "snapshot_path": str(snapshot_path) if snapshot_path and os.path.exists(snapshot_path) else None
-        }
-        
-        # Add recipient if configured
-        # Note: We don't send recipient_email to allow backend to use its full list from .env
-        # payload["recipient_email"] = ... 
-        
-        print(f"🚀 Sending alert request to {API_BASE_URL}/api/email/alert")
-        try:
-            response = requests.post(f"{API_BASE_URL}/api/email/alert", json=payload, timeout=5)
-            
-            if response.status_code == 200:
-                print(f"✅ Email alert sent successfully via backend")
-                return True
-            else:
-                print(f"❌ Backend returned error: {response.status_code} - {response.text}")
-                return False
-        except Exception as conn_err:
-             print(f"❌ Connection error to backend: {conn_err}")
-             return False
-            
+    print(f"🔍 send_violation_email_internal started for {class_name}")
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = ALERT_SENDER
+        msg['To'] = ALERT_RECIPIENT
+        msg['Subject'] = f'🚨 INTRUSION ALERT: {class_name} Detected!'
+        body = f"""
+        <html><body style='font-family:Arial,sans-serif;padding:20px;'>
+        <div style='max-width:600px;margin:0 auto;border:2px solid #dc3545;border-radius:10px;padding:20px;'>
+            <h2 style='color:#dc3545;'>🚨 Intrusion Detection Alert</h2>
+            <p><strong>Object Detected:</strong> {class_name}</p>
+            <p><strong>Confidence:</strong> {confidence:.1%}</p>
+            <p><strong>Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p><strong>Location:</strong> Main Camera (CAM-001)</p>
+            <p style='color:#dc3545;font-weight:bold;'>⚠️ Immediate action may be required!</p>
+        </div>
+        </body></html>
+        """
+        msg.attach(MIMEText(body, 'html'))
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(ALERT_SENDER, ALERT_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        print(f"✅ Alert email sent to {ALERT_RECIPIENT} for {class_name}")
+        return True
     except Exception as e:
-        print(f"❌ Error sending email alert: {e}")
+        print(f"❌ Error sending alert email: {e}")
         return False
 
 def send_email_notification(class_name, confidence, snapshot_path=None):
@@ -612,12 +610,12 @@ def send_email_notification(class_name, confidence, snapshot_path=None):
     
     print(f"📧 send_email_notification called for {class_name}")
     
-    # Rate limit: don't send more than 1 email per minute per class
+    # Rate limit: don't send more than 1 email per 10 seconds per class
     current_time = time.time()
     if class_name in last_email_time:
-        if current_time - last_email_time[class_name] < 60:  # 60 seconds
-            print(f"⏰ Rate limited: skipping email for {class_name} (last sent < 1 min ago)")
-            return  # Skip if less than 1 minute since last email
+        if current_time - last_email_time[class_name] < 10:  # 10 seconds
+            print(f"⏰ Rate limited: skipping email for {class_name} (last sent < 10s ago)")
+            return  # Skip if less than 10 seconds since last email
     
     # CRITICAL FIX: Update time IMMEDIATELY to prevent thread spamming while waiting for backend
     last_email_time[class_name] = current_time
@@ -760,7 +758,7 @@ def update_frame(cap, conf_threshold, detect_classes, alert_classes_list):
                         cv2.putText(annotated_frame, "ALERT SENT!", (x1, y1 - 55), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     
     if object_inside:
-        start_alert(str(Path(__file__).parent / "static" / "sounds" / "alert.wav"))
+        start_alert(os.path.join(_HERE, "static", "sounds", "alert.wav"))
     else:
         stop_alert()
     
@@ -1904,7 +1902,7 @@ def main_app():
             with st.expander("📈 Detection Trends Over Time", expanded=True):
                 if HAS_PLOTLY_ANALYTICS and len(filtered_df) > 1:
                     fig_trends = epa.create_detection_timeline(filtered_df)
-                    st.plotly_chart(fig_trends, width="stretch", theme=None)
+                    st.plotly_chart(fig_trends, use_container_width=True)
                 elif len(filtered_df) > 1:
                     # Group by date for line chart
                     daily_counts = filtered_df.groupby('Date').size().reset_index(name='Detections')
@@ -1920,7 +1918,7 @@ def main_app():
                 if HAS_PLOTLY_ANALYTICS and len(violation_filtered) > 1:
                     fig_violations = epa.create_detection_timeline(violation_filtered)
                     fig_violations.update_layout(title="Violation Timeline")
-                    st.plotly_chart(fig_violations, width="stretch", theme=None)
+                    st.plotly_chart(fig_violations, use_container_width=True)
                 elif len(violation_filtered) > 1:
                     # Group violations by date
                     daily_violations = violation_filtered.groupby('Date').size().reset_index(name='Violations')
@@ -1938,14 +1936,14 @@ def main_app():
             with st.expander("🎯 Class Distribution", expanded=False):
                 if HAS_PLOTLY_ANALYTICS and len(filtered_df) > 0:
                     fig_pie = epa.create_detection_pie_chart(filtered_df)
-                    st.plotly_chart(fig_pie, width="stretch", theme=None)
+                    st.plotly_chart(fig_pie, use_container_width=True)
                 else:
                     st.info("No class data available for analysis")
 
             with st.expander("📊 Confidence Distribution", expanded=False):
                 if HAS_PLOTLY_ANALYTICS and len(filtered_df) > 0:
                     fig_conf = epa.create_confidence_distribution(filtered_df)
-                    st.plotly_chart(fig_conf, width="stretch", theme=None)
+                    st.plotly_chart(fig_conf, use_container_width=True)
                 else:
                     st.info("No confidence data available for analysis")
             
@@ -1956,7 +1954,7 @@ def main_app():
                 if len(filtered_df) > 0:
                     if HAS_PLOTLY_ANALYTICS:
                         fig_heatmap = epa.create_detection_heatmap(filtered_df)
-                        st.plotly_chart(fig_heatmap, width="stretch", theme=None)
+                        st.plotly_chart(fig_heatmap, use_container_width=True)
                     else:
                         st.info("Chart module not available")
                 else:
