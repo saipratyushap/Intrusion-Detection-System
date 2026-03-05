@@ -1,0 +1,80 @@
+.rec-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.rec-search {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid #D1DBE5;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: white;
+    color: #2D3E50;
+    outline: none;
+    margin-bottom: 1rem;
+}
+
+.rec-search:focus {
+    border-color: #709138;
+}
+
+.rec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.rec-card {
+    padding: 1.25rem;
+}
+
+.rec-card-header {
+    color: #2D3E50;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+}
+
+.rec-meta {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.rec-meta-row {
+    display: flex;
+    justify-content: space-between;
+    color: #4A4A4A;
+    font-size: 0.88rem;
+}
+
+.rec-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.rec-dl-btn {
+    background: #709138;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.rec-dl-btn:hover {
+    background: #5d7a2f;
+}
+
+@media (max-width: 768px) {
+    .rec-stats {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+.auth-page {
+    min-height: 100vh;
+    background: #F8FAFC;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1rem;
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* Header */
+.auth-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.auth-logo {
+    max-width: 250px;
+    margin-bottom: 1.5rem;
+}
+
+.auth-title {
+    color: #709138;
+    font-weight: 800;
+    font-size: 3.2rem;
+    margin: 0 0 0.2rem;
+    letter-spacing: -1.5px;
+}
+
+.auth-subtitle {
+    color: #64748B;
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Card */
+.auth-card {
+    background: white;
+    width: 100%;
+    max-width: 520px;
+    padding: 2.5rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid #E2E8F0;
+}
+
+.auth-card-title {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #2D3E50;
+    margin-bottom: 1.5rem;
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+}
+
+.form-group label.label-green {
+    color: #709138;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid #D1DBE5;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: white;
+    color: #2D3E50;
+    outline: none;
+    transition: border 0.2s;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    border-color: #709138;
+    box-shadow: 0 0 0 3px rgba(112, 145, 56, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #94A3B8;
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 2.5rem;
+}
+
+.eye-btn {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #94A3B8;
+    padding: 0.25rem;
+}
+
+/* Buttons */
+.auth-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: #709138;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.auth-btn:hover {
+    background: #5d7a2f;
+    box-shadow: 0 4px 15px rgba(112, 145, 56, 0.3);
+    transform: translateY(-1px);
+}
+
+.auth-btn-secondary {
+    margin-top: 0;
+}
+
+.btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+/* Footer */
+.auth-footer {
+    width: 100%;
+    max-width: 520px;
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.auth-footer-text {
+    color: #64748B;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+}
+
+/* OTP text */
+.otp-sent-text {
+    color: #475569;
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+}
+
+.otp-sent-text a {
+    color: #709138;
+    font-weight: 600;
+}
+
+/* Messages */
+.auth-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.auth-success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* Verified email info */
+.verified-email-info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Field hints */
+.field-hint {
+    display: block;
+    color: #94A3B8;
+    font-size: 0.78rem;
+    margin-top: 0.35rem;
+}
+
+.field-error {
+    display: block;
+    color: #ef4444;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-top: 0.35rem;
+}
+
+.field-match {
+    display: block;
+    color: #22c55e;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-top: 0.35rem;
+}
+
+/* Password strength meter */
+.password-strength {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.4rem;
+}
+
+.strength-bar {
+    flex: 1;
+    height: 6px;
+    background: #E2E8F0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.strength-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+/* Disabled button */
+.auth-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}

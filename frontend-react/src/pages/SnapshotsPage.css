@@ -1,0 +1,99 @@
+.snap-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.snap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.snap-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.snap-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.snap-img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    display: block;
+}
+
+.snap-info {
+    padding: 0.5rem 0.75rem;
+}
+
+.snap-name {
+    display: block;
+    font-size: 0.78rem;
+    color: #475569;
+    font-weight: 600;
+}
+
+.snap-size {
+    display: block;
+    font-size: 0.72rem;
+    color: #94A3B8;
+    margin-top: 0.15rem;
+}
+
+.snap-delete-btn {
+    width: 100%;
+    padding: 0.4rem;
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+}
+
+.snap-delete-btn:hover {
+    background: #fecaca;
+}
+
+.delete-all-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.delete-all-btn:hover {
+    background: #dc2626;
+}
+
+.cancel-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+}
