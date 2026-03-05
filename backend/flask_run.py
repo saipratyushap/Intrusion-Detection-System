@@ -13,6 +13,12 @@ from flask_socketio import SocketIO, emit
 import pandas as pd
 from collections import Counter
 from datetime import datetime, timedelta
+from ultralytics import YOLO
+import cv2
+import numpy as np
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 # Import Business Intelligence modules
 from business_intelligence import AnalyticsDashboard, ReportGenerator, CostAnalyzer, _convert_to_native_types
@@ -52,14 +58,288 @@ app = Flask(__name__,
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+app.camera_active = False
+app.alert_active = False
+last_email_time = {}
+
+def send_violation_email_internal(class_name, confidence, snapshot_path=None):
+    ALERT_RECIPIENT = "gopalmuri1919@gmail.com"
+    ALERT_SENDER = os.environ.get('EMAIL_SENDER_EMAIL', 'p.saipratyusha732@gmail.com')
+    ALERT_PASSWORD = os.environ.get('EMAIL_SENDER_PASSWORD', 'miduuotoblozqzqj')
+    print(f"🔍 send_violation_email_internal started for {class_name}")
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = ALERT_SENDER
+        msg['To'] = ALERT_RECIPIENT
+        msg['Subject'] = f'🚨 INTRUSION ALERT: {class_name} Detected!'
+        body = f"""
+        <html><body style='font-family:Arial,sans-serif;padding:20px;'>
+        <div style='max-width:600px;margin:0 auto;border:2px solid #dc3545;border-radius:10px;padding:20px;'>
+            <h2 style='color:#dc3545;'>🚨 Intrusion Detection Alert</h2>
+            <p><strong>Object Detected:</strong> {class_name}</p>
+            <p><strong>Confidence:</strong> {confidence:.1%}</p>
+            <p><strong>Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p><strong>Location:</strong> Main Camera (CAM-001)</p>
+            <p style='color:#dc3545;font-weight:bold;'>⚠️ Immediate action may be required!</p>
+        </div>
+        </body></html>
+        """
+        msg.attach(MIMEText(body, 'html'))
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(ALERT_SENDER, ALERT_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        print(f"✅ Alert email sent to {ALERT_RECIPIENT} for {class_name}")
+        return True
+    except Exception as e:
+        print(f"❌ Error sending alert email: {e}")
+        return False
+
+def send_email_notification(class_name, confidence, snapshot_path=None):
+    global last_email_time
+    print(f"📧 send_email_notification called for {class_name}")
+    current_time = time.time()
+    if class_name in last_email_time:
+        if current_time - last_email_time[class_name] < 10:
+            print(f"⏰ Rate limited: skipping email for {class_name} (last sent < 10s ago)")
+            return
+    last_email_time[class_name] = current_time
+    def email_worker():
+        print(f"🔧 email_worker starting for {class_name}")
+        if send_violation_email_internal(class_name, confidence, snapshot_path):
+            print(f"✅ Email sent successfully for {class_name} violation")
+        else:
+            print(f"❌ Email sending failed for {class_name}")
+    thread = threading.Thread(target=email_worker, daemon=True)
+    thread.start()
+
+# ─────────────────────────────────────────────────
+# YOLO & Camera State
+# ─────────────────────────────────────────────────
+yolo_model = None
+try:
+    _model_path = os.path.abspath(os.path.join(str(Path(__file__).parent.parent), 'model', 'best.pt'))
+    if os.path.exists(_model_path):
+        yolo_model = YOLO(_model_path)
+except Exception as e:
+    print(f"Failed to load YOLO model: {e}")
+
+global_cap = None
+camera_lock = threading.Lock()
+camera_settings = {
+    "conf_threshold": 0.15,
+    "detect_classes": [] if not yolo_model else list(yolo_model.names.values()),
+    "alert_classes": [] if not yolo_model else list(yolo_model.names.values()),
+    "recording": False,
+    "video_writer": None,
+    "recording_start_time": None
+}
+
+class_colors = {}
+if yolo_model:
+    import random
+    class_colors = {yolo_model.names[class_id]: tuple(random.randint(0, 255) for _ in range(3)) for class_id in yolo_model.names}
+
+object_entry_times = {}
+
+def draw_restricted_area(frame):
+    h, w, _ = frame.shape
+    center = (w // 2, h // 2)
+    axes = (w // 4, h // 8)
+    cv2.ellipse(frame, center, axes, 0, 0, 360, (0, 0, 255), 2)
+    return frame, center, axes
+
+def is_near_restricted_area(box, center, axes):
+    x1, y1, x2, y2 = box
+    obj_center = ((x1 + x2) // 2, (y1 + y2) // 2)
+    distance = np.linalg.norm(np.array(center) - np.array(obj_center))
+    return distance < (min(axes) + 50)
+
+def generate_frames():
+    global global_cap, object_entry_times
+    while True:
+        with camera_lock:
+            if not global_cap:
+                time.sleep(0.5)
+                continue
+            ret, frame = global_cap.read()
+        
+        if not ret or frame is None:
+            time.sleep(0.1)
+            continue
+            
+        annotated_frame = frame.copy()
+        object_inside = False
+        
+        if yolo_model and camera_settings.get("detect_classes"):
+            results = yolo_model(frame, conf=camera_settings["conf_threshold"], iou=0.3)
+            annotated_frame, center, axes = draw_restricted_area(annotated_frame)
+            
+            for result in results[0].boxes:
+                class_id = int(result.cls)
+                class_name = yolo_model.names[class_id]
+                
+                if class_name in camera_settings["detect_classes"]:
+                    color = class_colors.get(class_name, (0, 255, 0))
+                    x1, y1, x2, y2 = map(int, result.xyxy[0])
+                    conf = float(result.conf[0])
+                    cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), color, 3)
+                    cv2.putText(annotated_frame, f"{class_name} {conf:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    
+                    if is_near_restricted_area([x1, y1, x2, y2], center, axes):
+                        if class_name in camera_settings["alert_classes"]:
+                            object_inside = True
+                            cv2.putText(annotated_frame, f"{class_name} in Restricted Area!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                            
+                            if class_name not in object_entry_times:
+                                object_entry_times[class_name] = time.time()
+                            
+                            elapsed = time.time() - object_entry_times[class_name]
+                            remaining = max(0, 2.0 - elapsed)
+                            
+                            if remaining > 0:
+                                cv2.putText(annotated_frame, f"Alert in {remaining:.1f}s", (x1, y1 - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2)
+                                
+                            if elapsed > 2:
+                                print(f"🚨 VIOLATION DETECTED: {class_name} with {conf:.2%} confidence")
+                                data = {"Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Class": class_name, "Confidence": conf, "Restricted Area Violation": "Yes"}
+                                df = pd.DataFrame([data])
+                                df.to_csv(csv_file, mode='a', header=False, index=False)
+                                object_entry_times[class_name] = time.time()
+                                
+                                # Snapshot
+                                try:
+                                    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                                    filename = f"frame_{ts}.jpg"
+                                    filepath = os.path.join(frames_dir, filename)
+                                    cv2.imwrite(filepath, annotated_frame)
+                                    print(f"📸 Snapshot saved: {filepath}")
+                                    
+                                    print(f"📧 Sending email alert for {class_name}...")
+                                    send_email_notification(class_name, conf, filepath)
+                                except Exception as e:
+                                    print(f"Snapshot/Email error: {e}")
+                                
+                                cv2.putText(annotated_frame, "ALERT LOGGED!", (x1, y1 - 55), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                                
+        app.alert_active = object_inside
+        
+        ret, buffer = cv2.imencode('.jpg', annotated_frame)
+        if app.camera_active:
+            # Recording logic
+            if camera_settings["recording"] and camera_settings["video_writer"]:
+                try:
+                    camera_settings["video_writer"].write(annotated_frame)
+                except Exception as e:
+                    print(f"Recording error: {e}")
+
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+        else:
+            time.sleep(0.5)
+
+# ─────────────────────────────────────────────────
 # Paths
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────────
 csv_file    = str(Path(__file__).parent.parent / "data" / "detection_log.csv")
 frames_dir  = str(Path(__file__).parent.parent / "data" / "frames")
+recordings_dir = str(Path(__file__).parent.parent / "data" / "recordings")
 data_dir    = str(Path(__file__).parent.parent / "data")
 CAMERAS_FILE      = str(Path(__file__).parent.parent / "data" / "cameras.json")
 USER_ACTIVITY_FILE = str(Path(__file__).parent.parent / "data" / "user_activity.json")
+
+# Ensure directories exist
+for d in [frames_dir, recordings_dir, data_dir]:
+    os.makedirs(d, exist_ok=True)
+
+# ─────────────────────────────────────────────────
+# Video Recording Helpers
+# ─────────────────────────────────────────────────
+def get_video_writer(filepath, fps=20, width=640, height=480):
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    writer = cv2.VideoWriter(filepath, fourcc, fps, (width, height))
+    if writer.isOpened():
+        print(f"✓ Video writer initialized: {filepath}")
+        return writer
+    print("❌ Failed to initialize video writer")
+    return None
+
+@app.route('/api/recording/start', methods=['POST'])
+def start_recording_api():
+    global camera_settings
+    if camera_settings["recording"]:
+        return jsonify({"status": "already_recording"})
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"recording_{timestamp}.avi"
+    filepath = os.path.join(recordings_dir, filename)
+    
+    # Try to get frame size from global_cap
+    width, height = 640, 480
+    if global_cap and global_cap.isOpened():
+        width = int(global_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(global_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    writer = get_video_writer(filepath, 20, width, height)
+    if writer:
+        camera_settings["recording"] = True
+        camera_settings["video_writer"] = writer
+        camera_settings["recording_start_time"] = time.time()
+        return jsonify({"status": "started", "file": filename})
+    return jsonify({"status": "error", "message": "Could not start recording"}), 500
+
+@app.route('/api/recording/stop', methods=['POST'])
+def stop_recording_api():
+    global camera_settings
+    if not camera_settings["recording"]:
+        return jsonify({"status": "not_recording"})
+    
+    if camera_settings["video_writer"]:
+        camera_settings["video_writer"].release()
+        camera_settings["video_writer"] = None
+    
+    camera_settings["recording"] = False
+    return jsonify({"status": "stopped"})
+
+@app.route('/api/alerts/stats')
+def get_alert_stats():
+    try:
+        if not os.path.exists(csv_file):
+            return jsonify({
+                "total_alerts": 0, "today_alerts": 0, 
+                "week_alerts": 0, "top_class": "N/A"
+            })
+            
+        df = pd.read_csv(csv_file)
+        if df.empty:
+            return jsonify({
+                "total_alerts": 0, "today_alerts": 0, 
+                "week_alerts": 0, "top_class": "N/A"
+            })
+            
+        df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+        violations = df[df["Restricted Area Violation"] == "Yes"]
+        
+        total_alerts = len(violations)
+        now = datetime.now()
+        today_alerts = len(violations[violations['Timestamp'].dt.date == now.date()])
+        week_ago = now - timedelta(days=7)
+        week_alerts = len(violations[violations['Timestamp'] >= week_ago])
+        
+        top_class = "N/A"
+        if not violations.empty:
+            top_class = violations['Class'].mode().iloc[0]
+            
+        return jsonify({
+            "total_alerts": total_alerts,
+            "today_alerts": today_alerts,
+            "week_alerts": week_alerts,
+            "top_class": top_class
+        })
+    except Exception as e:
+        print(f"Stats error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Service Initialization
@@ -83,6 +363,147 @@ if HAS_EMAIL_REPORTING:
 scheduler = get_scheduler()
 
 system_start_time = datetime.now()
+
+# ─────────────────────────────────────────────────
+# Auth: OTP + Users (for React frontend)
+# ─────────────────────────────────────────────────
+import secrets as _secrets
+import string as _string
+import smtplib
+from email.mime import multipart as mime_multipart, text as mime_text
+import hashlib as _hashlib
+
+USERS_FILE = str(Path(__file__).parent.parent / "data" / "users.json")
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SENDER_EMAIL = os.environ.get('EMAIL_SENDER_EMAIL', 'p.saipratyusha732@gmail.com')
+SENDER_PASSWORD = os.environ.get('EMAIL_SENDER_PASSWORD', 'miduuotoblozqzqj')
+OTP_EXPIRY_MINUTES = 5
+
+_otp_store = {}  # { email: { otp, time } }
+
+def _hash_password(pw):
+    return _hashlib.sha256(pw.encode()).hexdigest()
+
+def _load_users():
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def _save_users(users):
+    os.makedirs(os.path.dirname(USERS_FILE), exist_ok=True)
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f)
+
+@app.route('/api/auth/send-otp', methods=['POST'])
+def send_otp():
+    data = request.get_json()
+    email = data.get('email', '')
+    if not email or '@' not in email:
+        return jsonify({"success": False, "message": "Invalid email"}), 400
+    otp = ''.join(_secrets.choice(_string.digits) for _ in range(6))
+    # Send via SMTP
+    try:
+        msg = mime_multipart.MIMEMultipart()
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = email
+        msg['Subject'] = f'Your OTP Code: {otp}'
+        body = f"""
+        <html><body style="font-family: Arial, sans-serif; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; padding: 20px;">
+                <h2 style="color: #709138;">🔐 Security Verification</h2>
+                <p>Please use the following One-Time Password (OTP) to access the system:</p>
+                <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #709138; border-radius: 8px;">
+                    {otp}
+                </div>
+                <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                    This code will expire in {OTP_EXPIRY_MINUTES} minutes.
+                </p>
+            </div>
+        </body></html>
+        """
+        msg.attach(mime_text.MIMEText(body, 'html'))
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        _otp_store[email] = {"otp": otp, "time": datetime.now().isoformat()}
+        return jsonify({"success": True, "message": f"Verification code sent to {email}"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route('/api/auth/verify-otp', methods=['POST'])
+def verify_otp():
+    data = request.get_json()
+    email = data.get('email', '')
+    code = data.get('code', '')
+    stored = _otp_store.get(email)
+    if not stored:
+        return jsonify({"success": False, "message": "No OTP was sent to this email"}), 400
+    otp_time = datetime.fromisoformat(stored["time"])
+    from datetime import timedelta
+    if datetime.now() - otp_time > timedelta(minutes=OTP_EXPIRY_MINUTES):
+        del _otp_store[email]
+        return jsonify({"success": False, "message": "Code expired. Request a new one."}), 400
+    if code == stored["otp"]:
+        del _otp_store[email]
+        return jsonify({"success": True, "message": "Email verified!"})
+    return jsonify({"success": False, "message": "Invalid verification code"}), 400
+
+@app.route('/api/auth/register', methods=['POST'])
+def register_user_api():
+    data = request.get_json()
+    username = data.get('username', '')
+    password = data.get('password', '')
+    if not username or not password:
+        return jsonify({"success": False, "message": "Username and password required"}), 400
+    username = username.strip()
+    # Username validation
+    if len(username) < 3:
+        return jsonify({"success": False, "message": "Username must be at least 3 characters"}), 400
+    if len(username) > 30:
+        return jsonify({"success": False, "message": "Username must be 30 characters or less"}), 400
+    import re
+    if not re.match(r'^[a-zA-Z0-9._-]+$', username):
+        return jsonify({"success": False, "message": "Username can only contain letters, numbers, dots, underscores, and hyphens"}), 400
+    if username[0] in '._-':
+        return jsonify({"success": False, "message": "Username cannot start with a special character"}), 400
+    # Password validation
+    if len(password) < 8:
+        return jsonify({"success": False, "message": "Password must be at least 8 characters"}), 400
+    if not re.search(r'[A-Z]', password):
+        return jsonify({"success": False, "message": "Password must contain at least one uppercase letter"}), 400
+    if not re.search(r'[a-z]', password):
+        return jsonify({"success": False, "message": "Password must contain at least one lowercase letter"}), 400
+    if not re.search(r'[0-9]', password):
+        return jsonify({"success": False, "message": "Password must contain at least one number"}), 400
+    if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'\"\\|,.<>/?]', password):
+        return jsonify({"success": False, "message": "Password must contain at least one special character"}), 400
+    users = _load_users()
+    if username.lower() in [k.lower() for k in users.keys()]:
+        return jsonify({"success": False, "message": "Username already exists"}), 400
+    users[username] = _hash_password(password)
+    _save_users(users)
+    return jsonify({"success": True, "message": "Registration complete!"})
+
+@app.route('/api/auth/login', methods=['POST'])
+def login_user_api():
+    data = request.get_json()
+    username = data.get('username', '')
+    password = data.get('password', '')
+    users = _load_users()
+    for k in users:
+        if k.lower() == username.lower():
+            if users[k] == _hash_password(password):
+                return jsonify({"success": True, "message": "Login successful", "username": k})
+            else:
+                return jsonify({"success": False, "message": "Invalid password"}), 401
+    return jsonify({"success": False, "message": "User not found"}), 401
 
 # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Serve data directory files (static-like)
@@ -919,9 +1340,109 @@ def get_email_templates():
     ]})
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+@app.route("/api/detections/summary")
+def get_detections_summary():
+    try:
+        if not os.path.exists(csv_file):
+            return jsonify({
+                "total": 0, "violations": 0, 
+                "total_detections": 0, "total_violations": 0,
+                "average_confidence": 0, "top_class": "N/A"
+            })
+        df = pd.read_csv(csv_file)
+        if df.empty:
+            return jsonify({
+                "total": 0, "violations": 0, 
+                "total_detections": 0, "total_violations": 0,
+                "average_confidence": 0, "top_class": "N/A"
+            })
+            
+        total = len(df)
+        violations_df = df[df["Restricted Area Violation"] == "Yes"]
+        violations = len(violations_df)
+        avg_conf = df["Confidence"].mean() if not df.empty else 0
+        top_class = df["Class"].mode().iloc[0] if not df["Class"].empty else "N/A"
+        
+        return jsonify({
+            "total": total,
+            "violations": violations,
+            "total_detections": total,
+            "total_violations": violations,
+            "average_confidence": float(avg_conf),
+            "top_class": top_class
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/detections/recent")
+def get_recent_detections_api():
+    limit = request.args.get("limit", 100, type=int)
+    try:
+        if not os.path.exists(csv_file):
+            return jsonify({"detections": []})
+        df = pd.read_csv(csv_file)
+        if df.empty:
+            return jsonify({"detections": []})
+        recent = df.tail(limit).to_dict('records')
+        return jsonify({"detections": recent})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/snapshots-count")
+def get_snapshots_count():
+    try:
+        count = len([f for f in os.listdir(frames_dir) if f.endswith('.jpg')])
+        return jsonify({"count": count})
+    except Exception as e:
+        return jsonify({"count": 0})
+
+@app.route("/api/snapshots")
+def get_snapshots_api():
+    try:
+        files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.jpg')], reverse=True)
+        snapshots = [{"id": f, "filename": f, "path": f"/static/frames/{f}"} for f in files]
+        return jsonify({"snapshots": snapshots})
+    except Exception as e:
+        return jsonify({"snapshots": []})
+
+@app.route("/api/snapshots/delete", methods=["POST"])
+def delete_snapshot_api():
+    data = request.get_json() or {}
+    filename = data.get("id") or data.get("filename")
+    if not filename:
+        return jsonify({"error": "No filename provided"}), 400
+    try:
+        filepath = os.path.join(frames_dir, filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return jsonify({"status": "deleted"})
+        return jsonify({"error": "File not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/alerts/recent")
+def get_recent_alerts_api():
+    hours = request.args.get("hours", 24, type=int)
+    try:
+        if not os.path.exists(csv_file):
+            return jsonify({"alerts": []})
+        df = pd.read_csv(csv_file)
+        if df.empty:
+            return jsonify({"alerts": []})
+        df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+        recent_time = datetime.now() - timedelta(hours=hours)
+        violations = df[(df["Restricted Area Violation"] == "Yes") & (df['Timestamp'] >= recent_time)]
+        # Sort by timestamp descending
+        violations = violations.sort_values(by='Timestamp', ascending=False)
+        return jsonify({"alerts": violations.to_dict('records')})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────
 # Advanced Analytics
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─────────────────────────────────────────────────
 @app.route("/api/analytics/predictive/forecast")
 def get_forecast():
     if not HAS_ADVANCED_ANALYTICS:
@@ -1011,9 +1532,10 @@ def get_class_distribution():
     try:
         df = pd.read_csv(csv_file)
         if df.empty:
-            return jsonify({"labels": [], "data": []})
+            return jsonify({"data": []})
         counts = df['Class'].value_counts()
-        return jsonify({"labels": counts.index.tolist(), "data": counts.values.tolist()})
+        data = [{"class": k, "count": int(v)} for k, v in counts.items()]
+        return jsonify({"data": data})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1031,9 +1553,17 @@ def get_violation_trend():
         labels     = [d.strftime('%Y-%m-%d') for d in date_range]
         vio_day    = df[df['Restricted Area Violation'] == 'Yes'].groupby(df['Timestamp'].dt.date).size()
         det_day    = df.groupby(df['Timestamp'].dt.date).size()
-        return jsonify({"labels": labels,
-                        "violations": [int(vio_day.get(d, 0)) for d in date_range],
-                        "detections": [int(det_day.get(d, 0)) for d in date_range]})
+        
+        data = []
+        for d in date_range:
+            data.append({
+                "label": d.strftime('%Y-%m-%d'),
+                "value": int(det_day.get(d, 0)),
+                "violations": int(vio_day.get(d, 0)),
+                "count": int(det_day.get(d, 0)) # For backward compatibility
+            })
+            
+        return jsonify({"data": data, "labels": labels, "violations": [int(vio_day.get(d, 0)) for d in date_range]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1060,9 +1590,17 @@ def get_hourly_activity():
         df['Hour']      = df['Timestamp'].dt.hour
         hourly_det = df.groupby('Hour').size()
         hourly_vio = df[df['Restricted Area Violation'] == 'Yes'].groupby('Hour').size()
-        return jsonify({"labels": [f"{h:02d}:00" for h in range(24)],
-                        "detections": [int(hourly_det.get(h, 0)) for h in range(24)],
-                        "violations": [int(hourly_vio.get(h, 0)) for h in range(24)]})
+        
+        data = []
+        for h in range(24):
+            data.append({
+                "label": f"{h:02d}:00",
+                "value": int(hourly_det.get(h, 0)),
+                "violations": int(hourly_vio.get(h, 0)),
+                "count": int(hourly_det.get(h, 0))
+            })
+            
+        return jsonify({"data": data, "labels": [f"{h:02d}:00" for h in range(24)]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1152,6 +1690,8 @@ def get_detection_activity():
 def health_check():
     return jsonify({
         "status": "healthy", "timestamp": datetime.now().isoformat(),
+        "camera_active": getattr(app, "camera_active", False),
+        "alert_active": getattr(app, "alert_active", False),
         "services": {
             "analytics": "operational", "reports": "operational", "cost_analysis": "operational",
             "email":     "operational" if email_service.config.get("enabled") else "disabled",
@@ -1250,6 +1790,55 @@ def save_cameras(cameras):
 
 def generate_camera_id():
     return f"cam_{uuid.uuid4().hex[:8]}"
+
+
+@app.route("/api/cameras/start", methods=["POST"])
+def start_camera_feed():
+    global global_cap
+    with camera_lock:
+        if not global_cap:
+            # Note: For some platforms, cv2.CAP_DSHOW might be needed, using default and falling back
+            global_cap = cv2.VideoCapture(0)
+            if global_cap.isOpened():
+                global_cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                global_cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                app.camera_active = True
+                return jsonify({"success": True, "message": "Camera started"})
+            else:
+                global_cap = None
+                app.camera_active = False
+                return jsonify({"error": "Failed to open camera"}), 500
+        app.camera_active = True
+        return jsonify({"success": True, "message": "Camera already running"})
+
+
+@app.route("/api/cameras/stop", methods=["POST"])
+def stop_camera_feed():
+    global global_cap
+    with camera_lock:
+        app.camera_active = False
+        if global_cap:
+            global_cap.release()
+            global_cap = None
+    return jsonify({"success": True, "message": "Camera stopped"})
+
+
+@app.route("/api/video_feed")
+def video_feed_route():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route('/api/camera_settings', methods=['POST'])
+def set_camera_settings():
+    data = request.json
+    if not data: return jsonify({"error": "No data"}), 400
+    if "conf_threshold" in data:
+        camera_settings["conf_threshold"] = float(data["conf_threshold"])
+    if "detect_classes" in data:
+        camera_settings["detect_classes"] = data["detect_classes"]
+    if "alert_classes" in data:
+        camera_settings["alert_classes"] = data["alert_classes"]
+    return jsonify({"success": True, "settings": camera_settings})
 
 
 @app.route("/api/cameras")

@@ -1,0 +1,165 @@
+.ms-container {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+/* Input area */
+.ms-input-area {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    border: 1px solid #D1DBE5;
+    border-radius: 8px;
+    padding: 0.35rem 0.5rem;
+    background: white;
+    min-height: 40px;
+    cursor: pointer;
+    transition: border 0.2s;
+}
+
+.ms-input-area:hover {
+    border-color: #709138;
+}
+
+.ms-tags-wrapper {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.ms-placeholder {
+    color: #94A3B8;
+    font-size: 0.88rem;
+    padding: 0.15rem 0;
+}
+
+/* Tags */
+.ms-tag {
+    background: #709138;
+    color: white;
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.ms-tag-x {
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0.8;
+    transition: opacity 0.15s;
+}
+
+.ms-tag-x:hover {
+    opacity: 1;
+}
+
+/* Search input inside tags area */
+.ms-search-input {
+    border: none;
+    outline: none;
+    font-size: 0.85rem;
+    font-family: inherit;
+    background: transparent;
+    color: #2D3E50;
+    min-width: 60px;
+    flex: 1;
+    padding: 0.15rem 0;
+}
+
+/* Controls (clear + chevron) */
+.ms-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding-top: 0.2rem;
+    flex-shrink: 0;
+}
+
+.ms-clear {
+    color: #94A3B8;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.ms-clear:hover {
+    color: #ef4444;
+}
+
+.ms-chevron {
+    color: #94A3B8;
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+}
+
+.ms-chevron.open {
+    transform: rotate(180deg);
+}
+
+/* Dropdown */
+.ms-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #D1DBE5;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 50;
+    margin-top: 4px;
+}
+
+.ms-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ms-dropdown::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.ms-dropdown::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.ms-option {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.88rem;
+    color: #2D3E50;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.ms-option:hover {
+    background: #f1f5f9;
+}
+
+.ms-option-selected {
+    background: rgba(112, 145, 56, 0.1);
+    color: #709138;
+    font-weight: 600;
+}
+
+.ms-option-selected:hover {
+    background: rgba(112, 145, 56, 0.2);
+}
+
+.ms-no-results {
+    padding: 0.75rem;
+    color: #94A3B8;
+    font-size: 0.85rem;
+    text-align: center;
+}

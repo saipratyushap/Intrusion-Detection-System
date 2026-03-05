@@ -1,0 +1,131 @@
+.page-header {
+    color: #709138;
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+}
+
+/* Status row */
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.status-badge-enhanced {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid;
+}
+
+.status-badge-enhanced.active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.status-badge-enhanced.recording {
+    background: rgba(124, 58, 237, 0.15);
+    color: #a78bfa;
+    border-color: rgba(124, 58, 237, 0.3);
+}
+
+.status-badge-enhanced.inactive {
+    background: rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+.status-time {
+    color: #4A4A4A;
+    font-size: 0.9rem;
+    margin-left: auto;
+}
+
+/* Video */
+.video-wrapper {
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    height: 60vh;
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.video-wrapper.alerting {
+    border-color: #ef4444;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+.video-alert-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    text-align: center;
+    padding: 0.75rem;
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: 2px;
+    z-index: 10;
+    animation: flash 1s infinite alternate;
+}
+
+@keyframes flash {
+    from {
+        opacity: 0.8;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.camera-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* Status bar */
+.status-bar {
+    padding: 1rem 1.5rem;
+}
+
+.status-bar-items {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.status-label {
+    color: #4A4A4A;
+    font-size: 0.85rem;
+}
+
+.status-value {
+    font-weight: 600;
+}
+
+.status-value.active {
+    color: #4ade80;
+}
+
+.text-red {
+    color: #ef4444;
+}
